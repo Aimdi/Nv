@@ -39,7 +39,7 @@ data class AppSettings(
          * own packs, which is also how the packs feature is exercised without a public host.
          */
         const val DEFAULT_PACK_MANIFEST_URL =
-            "https://github.com/naicompanion/nai-prompt-companion/releases/latest/download/packs.json"
+            "https://github.com/Aimdi/Nv/releases/latest/download/packs.json"
     }
 }
 

@@ -33,9 +33,9 @@ builder.
 
 ## Installing
 
-Grab the APK from [Releases](../../releases) and sideload it. For updates, add the repository to
-[Obtainium](https://github.com/ImranR98/Obtainium), which tracks GitHub releases and notifies you
-about new ones.
+Download **[`nai-companion-v0.1.0.apk`](https://github.com/Aimdi/Nv/releases/download/v0.1.0/nai-companion-v0.1.0.apk)**
+from [Releases](https://github.com/Aimdi/Nv/releases) and sideload it. For updates, add this
+repository in [Obtainium](https://github.com/ImranR98/Obtainium).
 
 The release APK is around 5.4 MB, including the 3.3 MB tag catalog. Preview images are downloaded
 separately, on request.
@@ -62,8 +62,21 @@ keyPassword=...
 
 or set `ANDROID_KEYSTORE_FILE`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and
 `ANDROID_KEY_PASSWORD` in the environment. The release workflow uses the environment form, reading
-the keystore from the `ANDROID_KEYSTORE_BASE64` secret. Obtainium identifies apps partly by
-signature, so keep using the same key for every release.
+the keystore from the `ANDROID_KEYSTORE_BASE64` secret.
+
+Obtainium identifies apps partly by signature, so **every release must use the same signing key**.
+`v0.1.0` was signed with a dedicated release keystore (alias `nai-companion`). Store that keystore
+as GitHub Actions secrets before cutting the next release:
+
+| Secret | Value |
+| --- | --- |
+| `ANDROID_KEYSTORE_BASE64` | base64 of the `.jks` file |
+| `ANDROID_KEYSTORE_PASSWORD` | keystore password |
+| `ANDROID_KEY_ALIAS` | `nai-companion` |
+| `ANDROID_KEY_PASSWORD` | key password |
+
+Then tag a new version (`git tag v0.1.1 && git push origin v0.1.1`) and the release workflow will
+publish a signed APK.
 
 ## Architecture
 
