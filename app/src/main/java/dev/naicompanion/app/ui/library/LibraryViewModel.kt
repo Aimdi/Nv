@@ -9,6 +9,7 @@ import dev.naicompanion.app.core.prompt.Combo
 import dev.naicompanion.app.core.prompt.NovelAiPromptRenderer
 import dev.naicompanion.app.data.repository.ComboRepository
 import dev.naicompanion.app.data.repository.PromptRepository
+import dev.naicompanion.app.data.settings.AppSettings
 import dev.naicompanion.app.data.settings.SettingsRepository
 import dev.naicompanion.app.data.user.PromptEntity
 import dev.naicompanion.app.di.AppContainer
@@ -87,13 +88,12 @@ class LibraryViewModel(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LibraryUiState())
 
-    /** Rendered previews for combos, using the user's current render settings. */
-    val renderOptions = settingsRepository.settings
-        .stateIn(
-            viewModelScope,
-            SharingStarted.WhileSubscribed(5_000),
-            dev.naicompanion.app.data.settings.AppSettings(),
-        )
+    /**
+     * The render settings combo previews are drawn with. Exposed as a flow so the library
+     * recomposes when the user changes, say, the target model in Settings.
+     */
+    val settings: StateFlow<AppSettings> = settingsRepository.settings
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppSettings())
 
     fun setTab(value: LibraryTab) {
         _tab.value = value
@@ -133,8 +133,8 @@ class LibraryViewModel(
         }
     }
 
-    fun renderCombo(combo: Combo): String =
-        NovelAiPromptRenderer.render(combo.entries, renderOptions.value.renderOptions)
+    fun renderCombo(combo: Combo, settings: AppSettings): String =
+        NovelAiPromptRenderer.render(combo.entries, settings.renderOptions)
 
     private fun List<Combo>.filterByQuery(rawQuery: String): List<Combo> {
         val needle = rawQuery.trim().lowercase()

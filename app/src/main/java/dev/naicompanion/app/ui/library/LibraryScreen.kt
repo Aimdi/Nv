@@ -63,6 +63,7 @@ fun LibraryScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val tab by viewModel.tab.collectAsStateWithLifecycle()
+    val settings by viewModel.settings.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -168,7 +169,7 @@ fun LibraryScreen(
                             verticalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
                             items(state.combos, key = { it.id }) { combo ->
-                                val rendered = viewModel.renderCombo(combo)
+                                val rendered = viewModel.renderCombo(combo, settings)
                                 ComboCard(
                                     combo = combo,
                                     rendered = rendered,
