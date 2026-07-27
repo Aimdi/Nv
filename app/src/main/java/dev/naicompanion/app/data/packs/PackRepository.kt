@@ -67,11 +67,6 @@ class PackRepository(
         return null
     }
 
-    fun hasPackForSource(source: String): Boolean =
-        _installed.value.any { it.source == source }
-
-    fun totalBytesOnDisk(): Long = _installed.value.sumOf { it.bytesOnDisk }
-
     // endregion
 
     // region manifest

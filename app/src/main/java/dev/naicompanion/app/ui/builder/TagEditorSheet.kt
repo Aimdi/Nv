@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -205,8 +205,8 @@ fun TagEditorSheet(
                     modifier = Modifier.weight(1f),
                 ) {
                     Icon(Icons.Default.Delete, contentDescription = null)
-                    Spacer(Modifier.height(0.dp))
-                    Text("  Remove")
+                    Spacer(Modifier.width(8.dp))
+                    Text("Remove")
                 }
                 Button(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Done") }
             }

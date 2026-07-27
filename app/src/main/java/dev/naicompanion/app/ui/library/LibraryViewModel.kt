@@ -133,10 +133,6 @@ class LibraryViewModel(
         }
     }
 
-    fun updatePrompt(prompt: PromptEntity) {
-        viewModelScope.launch { promptRepository.save(prompt) }
-    }
-
     fun renderCombo(combo: Combo): String =
         NovelAiPromptRenderer.render(combo.entries, renderOptions.value.renderOptions)
 

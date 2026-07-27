@@ -8,9 +8,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -26,6 +28,7 @@ import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.Warning
@@ -129,6 +132,9 @@ fun BuilderScreen(
                     }
                     IconButton(onClick = viewModel::clear, enabled = !state.isEmpty) {
                         Icon(Icons.Default.DeleteSweep, contentDescription = "Clear combo")
+                    }
+                    IconButton(onClick = onOpenSettings) {
+                        Icon(Icons.Default.Settings, contentDescription = "Settings")
                     }
                 },
             )
@@ -432,9 +438,8 @@ private fun PromptOutputBar(
                     if (copyOpensNovelAi) Icons.Default.OpenInBrowser else Icons.Default.ContentCopy,
                     contentDescription = null,
                 )
-                Text(
-                    text = if (copyOpensNovelAi) "  Copy & open" else "  Copy",
-                )
+                Spacer(Modifier.width(8.dp))
+                Text(text = if (copyOpensNovelAi) "Copy & open" else "Copy")
             }
             FilledTonalButton(onClick = onShare, enabled = rendered.isNotEmpty()) {
                 Icon(Icons.Default.Share, contentDescription = "Share prompt")

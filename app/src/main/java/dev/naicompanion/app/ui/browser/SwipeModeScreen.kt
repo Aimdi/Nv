@@ -28,6 +28,7 @@ import androidx.compose.material3.LargeFloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,10 +53,12 @@ fun SwipeModeScreen(
     onFavorite: (BrowseItem) -> Unit,
     onAdd: (BrowseItem) -> Unit,
 ) {
-    if (items.isEmpty()) {
-        onExit()
-        return
+    // Filters can empty the list while swipe mode is open; leaving must happen as an effect
+    // rather than as a side effect of composition.
+    LaunchedEffect(items.isEmpty()) {
+        if (items.isEmpty()) onExit()
     }
+    if (items.isEmpty()) return
 
     val pagerState = rememberPagerState(pageCount = { items.size })
     val scope = rememberCoroutineScope()

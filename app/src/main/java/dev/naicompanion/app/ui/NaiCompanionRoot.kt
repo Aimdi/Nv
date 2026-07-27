@@ -51,9 +51,10 @@ private const val ROUTE_SETTINGS = "settings"
 private const val ROUTE_PACKS = "packs"
 
 @Composable
-fun NaiCompanionApp(
+fun NaiCompanionRoot(
     container: AppContainer,
-    initialSharedText: String? = null,
+    sharedText: String? = null,
+    onSharedTextHandled: () -> Unit = {},
 ) {
     val navController = rememberNavController()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -62,9 +63,14 @@ fun NaiCompanionApp(
         viewModel(factory = BuilderViewModel.factory(container))
 
     // Text arriving from the share sheet always lands in the builder.
-    LaunchedEffect(initialSharedText) {
-        if (!initialSharedText.isNullOrBlank()) {
-            builderViewModel.appendFromText(initialSharedText)
+    LaunchedEffect(sharedText) {
+        if (!sharedText.isNullOrBlank()) {
+            builderViewModel.appendFromText(sharedText)
+            onSharedTextHandled()
+            navController.navigate(TopLevelDestination.BUILDER.route) {
+                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true
+            }
         }
     }
 
@@ -150,7 +156,6 @@ fun NaiCompanionApp(
                     snackbarHostState = snackbarHostState,
                     onAddTag = { name, kind -> builderViewModel.addTag(name, kind) },
                     onOpenPacks = { navController.navigate(ROUTE_PACKS) },
-                    onOpenSettings = { navController.navigate(ROUTE_SETTINGS) },
                 )
             }
 

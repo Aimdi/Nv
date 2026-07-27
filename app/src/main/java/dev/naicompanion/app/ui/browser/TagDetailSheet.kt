@@ -7,11 +7,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -143,7 +145,8 @@ fun TagDetailSheet(
                     modifier = Modifier.weight(1f),
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null)
-                    Text("  Add to builder")
+                    Spacer(Modifier.width(8.dp))
+                    Text("Add to builder")
                 }
                 FilledTonalButton(onClick = { ClipboardBridge.copy(context, renderedTag) }) {
                     Icon(Icons.Default.ContentCopy, contentDescription = "Copy tag")

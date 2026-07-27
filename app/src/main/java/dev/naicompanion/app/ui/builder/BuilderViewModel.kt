@@ -273,11 +273,6 @@ class BuilderViewModel(
         }
     }
 
-    fun saveAsNewCombo(name: String) {
-        editingComboId = 0L
-        saveCombo(name)
-    }
-
     fun saveAsPrompt(title: String) {
         val rendered = uiState.value.rendered
         if (rendered.isBlank()) {

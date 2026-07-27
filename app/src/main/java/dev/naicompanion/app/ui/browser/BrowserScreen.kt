@@ -75,7 +75,6 @@ fun BrowserScreen(
     snackbarHostState: SnackbarHostState,
     onAddTag: (String, TagKind) -> Unit,
     onOpenPacks: () -> Unit,
-    onOpenSettings: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val swipeMode by viewModel.swipeMode.collectAsStateWithLifecycle()
