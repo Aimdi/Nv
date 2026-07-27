@@ -24,8 +24,12 @@ interface CatalogDao {
     @Query("SELECT COUNT(*) FROM artists")
     suspend fun count(): Int
 
-    @Query("SELECT DISTINCT source FROM artists ORDER BY source")
-    suspend fun sources(): List<String>
+    /**
+     * Distinct values of the pipe-delimited `sources` column. There are only a handful of
+     * combinations, so the caller splits them into individual source names.
+     */
+    @Query("SELECT DISTINCT sources FROM artists")
+    suspend fun sourceCombinations(): List<String>
 
     @Query("SELECT DISTINCT kind FROM artists ORDER BY kind")
     suspend fun kinds(): List<String>

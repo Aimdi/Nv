@@ -40,9 +40,17 @@ data class ArtistEntity(
     @ColumnInfo(name = "post_count")
     val postCount: Int,
 
-    /** Which dataset the row and its preview came from, e.g. `nai-v3` or `illustrious`. */
+    /** Primary dataset this row's metadata came from, e.g. `nai-v3` or `illustrious`. */
     @ColumnInfo(name = "source")
     val source: String,
+
+    /**
+     * Every dataset that lists this artist, pipe-delimited and pipe-padded
+     * (`|nai-v3|illustrious|`) so a source filter can match a whole segment with `LIKE`.
+     * Artists appear once in the catalog even when several datasets cover them.
+     */
+    @ColumnInfo(name = "sources")
+    val sources: String,
 
     /** Preview file name inside the pack directory for this source, or null when unavailable. */
     @ColumnInfo(name = "preview")

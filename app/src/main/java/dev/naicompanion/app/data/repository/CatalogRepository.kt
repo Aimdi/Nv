@@ -26,11 +26,17 @@ class CatalogRepository(private val dao: CatalogDao) {
     val status: StateFlow<CatalogStatus> = _status.asStateFlow()
 
     suspend fun refresh() {
-        _status.value = runCatching { CatalogStatus.Ready(dao.count(), dao.sources()) }
+        _status.value = runCatching { CatalogStatus.Ready(dao.count(), readSources()) }
             .getOrElse { error ->
                 CatalogStatus.Unavailable(error.message ?: "Tag catalog could not be opened")
             }
     }
+
+    private suspend fun readSources(): List<String> = dao.sourceCombinations()
+        .flatMap { it.split(CatalogQueryBuilder.SOURCE_DELIMITER) }
+        .filter { it.isNotBlank() }
+        .distinct()
+        .sorted()
 
     fun observe(query: CatalogQuery): Flow<List<ArtistEntity>> = flow {
         emitAll(dao.searchFlow(CatalogQueryBuilder.build(query)))
@@ -45,5 +51,5 @@ class CatalogRepository(private val dao: CatalogDao) {
     suspend fun findAllByName(names: List<String>): List<ArtistEntity> =
         runCatching { dao.findAllByName(names) }.getOrDefault(emptyList())
 
-    suspend fun sources(): List<String> = runCatching { dao.sources() }.getOrDefault(emptyList())
+    suspend fun sources(): List<String> = runCatching { readSources() }.getOrDefault(emptyList())
 }

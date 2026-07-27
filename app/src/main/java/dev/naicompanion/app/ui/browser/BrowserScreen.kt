@@ -24,7 +24,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.ImageNotSupported
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Style
 import androidx.compose.material.icons.outlined.StarBorder
@@ -113,7 +113,7 @@ fun BrowserScreen(
                     }
                     Box {
                         IconButton(onClick = { sortMenuOpen = true }) {
-                            Icon(Icons.Default.Sort, contentDescription = "Sort")
+                            Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Sort")
                         }
                         DropdownMenu(
                             expanded = sortMenuOpen,

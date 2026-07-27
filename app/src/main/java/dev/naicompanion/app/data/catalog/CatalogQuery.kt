@@ -40,6 +40,9 @@ object CatalogQueryBuilder {
 
     private const val LIKE_ESCAPE = '\\'
 
+    /** Separator used by the `sources` column; see [ArtistEntity.sources]. */
+    const val SOURCE_DELIMITER = "|"
+
     fun build(query: CatalogQuery): SupportSQLiteQuery {
         val args = mutableListOf<Any>()
         val where = mutableListOf<String>()
@@ -60,8 +63,11 @@ object CatalogQueryBuilder {
         }
 
         if (query.sources.isNotEmpty()) {
-            where += "source IN (${placeholders(query.sources.size)})"
-            args.addAll(query.sources.sorted())
+            val sorted = query.sources.sorted()
+            where += sorted.joinToString(" OR ", prefix = "(", postfix = ")") {
+                "sources LIKE ? ESCAPE '$LIKE_ESCAPE'"
+            }
+            args.addAll(sorted.map { "%${SOURCE_DELIMITER}${escapeLike(it)}${SOURCE_DELIMITER}%" })
         }
 
         if (query.kinds.isNotEmpty()) {
@@ -117,13 +123,18 @@ object CatalogQueryBuilder {
     }
 
     /**
-     * Turns free text into an FTS4 MATCH expression, quoting each token so punctuation cannot be
-     * read as FTS syntax and appending `*` for search-as-you-type prefix matching.
+     * Turns free text into an FTS4 MATCH expression for search-as-you-type.
+     *
+     * Tokens are emitted bare with a trailing `*`. The quoted form (`"wlo"*`) must not be used:
+     * unlike FTS5, FTS4 treats that as an exact phrase and silently ignores the prefix operator,
+     * so every partially typed search would return nothing. Splitting on non-alphanumerics first
+     * means the tokens cannot contain FTS syntax, and the trailing `*` also stops a token like
+     * `OR` or `NEAR` from being read as an operator.
      */
     fun toFtsMatchQuery(input: String): String? {
         val tokens = input.split(TOKEN_SPLIT).filter { it.isNotBlank() }
         if (tokens.isEmpty()) return null
-        return tokens.joinToString(" ") { "\"${it.replace("\"", "")}\"*" }
+        return tokens.joinToString(" ") { "$it*" }
     }
 
     /** Escapes the `LIKE` wildcards so a literal `%` or `_` in a tag is searched for verbatim. */

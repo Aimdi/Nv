@@ -45,18 +45,24 @@ class PackRepository(
     // region lookup
 
     /**
-     * Resolves a catalog row's preview file to an on-disk image, or null when no pack supplying
-     * that source is installed.
+     * Resolves a catalog row's preview file to an on-disk image.
+     *
+     * Packs all name their files after the artist tag, so any installed pack can supply an image
+     * for any row. The pack matching [source] is preferred because that is the model the row's
+     * metadata describes, but a pack from another dataset is better than an empty tile.
      */
     fun resolvePreview(source: String, fileName: String?, size: PreviewSize): File? {
         if (fileName.isNullOrBlank()) return null
-        val pack = _installed.value.firstOrNull { it.source == source } ?: return null
-        val candidate = File(File(packsRoot, pack.id), "${size.dirName}/$fileName")
-        if (candidate.exists()) return candidate
-        // Detail images are optional; fall back to the thumbnail so the UI still shows something.
-        if (size == PreviewSize.FULL) {
-            val thumb = File(File(packsRoot, pack.id), "${PreviewSize.THUMB.dirName}/$fileName")
-            if (thumb.exists()) return thumb
+        val packs = _installed.value.sortedByDescending { it.source == source }
+        for (pack in packs) {
+            val packDir = File(packsRoot, pack.id)
+            File(packDir, "${size.dirName}/$fileName").takeIf { it.exists() }?.let { return it }
+            // Detail images are optional; fall back to the thumbnail so something still shows.
+            if (size == PreviewSize.FULL) {
+                File(packDir, "${PreviewSize.THUMB.dirName}/$fileName")
+                    .takeIf { it.exists() }
+                    ?.let { return it }
+            }
         }
         return null
     }
