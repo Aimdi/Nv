@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <include domain="database" path="nai_user.db" />
+    <include domain="sharedpref" path="." />
+    <!-- Preview packs are large and re-downloadable, so they stay out of cloud backups. -->
+    <exclude domain="file" path="packs" />
+</full-backup-content>
