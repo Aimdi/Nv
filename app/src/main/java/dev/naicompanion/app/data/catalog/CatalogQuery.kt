@@ -22,10 +22,12 @@ data class CatalogQuery(
 ) {
     companion object {
         /**
-         * Enough rows to scroll through for a long time while keeping the in-memory list small.
-         * The catalog is only ~16k rows, so this is a safety net rather than real pagination.
+         * Comfortably above the bundled catalog's ~17k rows, so every sort order can reach every
+         * artist; a lower cap would make the tail unreachable when sorting by name. The rows are
+         * small and the grid only composes what is visible, so holding them all costs a few MB.
+         * This is a backstop against an unexpectedly large catalog, not pagination.
          */
-        const val DEFAULT_LIMIT = 5_000
+        const val DEFAULT_LIMIT = 50_000
     }
 }
 

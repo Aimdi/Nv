@@ -46,7 +46,7 @@ Needs JDK 17+ and the Android SDK (compile/target 35, min 26).
 
 ```bash
 ./gradlew assembleDebug        # debug APK
-./gradlew testDebugUnitTest    # 136 unit tests
+./gradlew testDebugUnitTest    # 137 unit tests
 ./gradlew lintDebug
 ./gradlew assembleRelease      # falls back to the debug key when unsigned
 ```
@@ -185,7 +185,7 @@ checked against a SHA-256 before being unpacked.
 
 ## Testing
 
-136 unit tests, all runnable on the JVM with `./gradlew testDebugUnitTest`. Robolectric is used
+137 unit tests, all runnable on the JVM with `./gradlew testDebugUnitTest`. Robolectric is used
 where a real SQLite database matters, so the catalog, user database, backup and pack code are
 exercised against real storage rather than mocks.
 

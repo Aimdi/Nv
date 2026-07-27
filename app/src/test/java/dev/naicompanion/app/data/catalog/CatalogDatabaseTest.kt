@@ -182,6 +182,13 @@ class CatalogDatabaseTest {
         assertThat(rows).hasSize(7)
     }
 
+    /** Sorting by name must be able to reach the end of the catalog, not just the first page. */
+    @Test
+    fun `the default limit covers the whole catalog`() = runTest {
+        val rows = dao.search(CatalogQueryBuilder.build(CatalogQuery()))
+        assertThat(rows).hasSize(dao.count())
+    }
+
     @Test
     fun `lookup by name works for the builder suggestion path`() = runTest {
         assertThat(dao.findByName("wlop")).isNotNull()
