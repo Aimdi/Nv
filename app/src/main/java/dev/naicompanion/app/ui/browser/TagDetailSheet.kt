@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -74,7 +75,9 @@ fun TagDetailSheet(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(1f)
+                    // The upstream previews are portrait (832x1216), so a square frame would
+                    // letterbox them heavily.
+                    .aspectRatio(PREVIEW_ASPECT_RATIO)
                     .clip(RoundedCornerShape(14.dp))
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center,
@@ -84,7 +87,7 @@ fun TagDetailSheet(
                         model = ImageRequest.Builder(context).data(fullImage).crossfade(true).build(),
                         contentDescription = item.artist.displayName,
                         contentScale = ContentScale.Fit,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxSize(),
                     )
                 } else {
                     Column(
@@ -159,3 +162,6 @@ fun TagDetailSheet(
         }
     }
 }
+
+/** Aspect ratio of the upstream preview renders (832x1216). */
+private const val PREVIEW_ASPECT_RATIO = 832f / 1216f
