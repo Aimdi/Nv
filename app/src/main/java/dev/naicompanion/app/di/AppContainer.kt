@@ -11,6 +11,8 @@ import dev.naicompanion.app.data.repository.DraftRepository
 import dev.naicompanion.app.data.repository.FavoriteTagRepository
 import dev.naicompanion.app.data.repository.PromptRepository
 import dev.naicompanion.app.data.settings.SettingsRepository
+import dev.naicompanion.app.data.settings.draftDataStore
+import dev.naicompanion.app.data.settings.settingsDataStore
 import dev.naicompanion.app.data.user.UserDatabase
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
@@ -35,8 +37,10 @@ class AppContainer(private val context: Context) {
             .build()
     }
 
-    val settingsRepository: SettingsRepository by lazy { SettingsRepository(context) }
-    val draftRepository: DraftRepository by lazy { DraftRepository(context) }
+    val settingsRepository: SettingsRepository by lazy {
+        SettingsRepository(settingsDataStore(context))
+    }
+    val draftRepository: DraftRepository by lazy { DraftRepository(draftDataStore(context)) }
 
     val promptRepository: PromptRepository by lazy { PromptRepository(userDatabase.promptDao()) }
     val comboRepository: ComboRepository by lazy { ComboRepository(userDatabase.comboDao()) }

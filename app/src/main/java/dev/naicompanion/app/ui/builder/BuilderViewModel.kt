@@ -105,8 +105,12 @@ class BuilderViewModel(
 
     init {
         viewModelScope.launch {
-            entries.value = draftRepository.draft.first()
-            comboName.value = draftRepository.draftName.first()
+            val storedEntries = draftRepository.draft.first()
+            val storedName = draftRepository.draftName.first()
+            // Reading the draft is asynchronous, so anything the user managed to add in the
+            // meantime wins; restoring unconditionally would throw those edits away.
+            if (entries.value.isEmpty()) entries.value = storedEntries
+            if (comboName.value.isEmpty()) comboName.value = storedName
             draftRestored = true
         }
 

@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Explicit includes only: prompts, combos, favourites and settings travel with the user, while the
+  downloaded preview packs and the bundled catalog stay behind since both are reproducible.
+-->
 <data-extraction-rules>
     <cloud-backup>
         <include domain="database" path="nai_user.db" />
         <include domain="sharedpref" path="." />
-        <exclude domain="file" path="packs" />
     </cloud-backup>
     <device-transfer>
         <include domain="database" path="nai_user.db" />

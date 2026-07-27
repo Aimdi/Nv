@@ -1,20 +1,17 @@
 package dev.naicompanion.app.data.settings
 
-import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import dev.naicompanion.app.core.prompt.NovelAiModel
 import dev.naicompanion.app.core.prompt.RenderOptions
 import dev.naicompanion.app.data.catalog.CatalogSort
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-
-private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore("settings")
 
 /** User-visible preferences plus the render options derived from them. */
 data class AppSettings(
@@ -46,9 +43,9 @@ data class AppSettings(
     }
 }
 
-class SettingsRepository(private val context: Context) {
+class SettingsRepository(private val dataStore: DataStore<Preferences>) {
 
-    val settings: Flow<AppSettings> = context.settingsDataStore.data.map { prefs ->
+    val settings: Flow<AppSettings> = dataStore.data.map { prefs ->
         AppSettings(
             model = NovelAiModel.fromStorage(prefs[KEY_MODEL]),
             underscoresToSpaces = prefs[KEY_UNDERSCORES] ?: true,
@@ -78,8 +75,8 @@ class SettingsRepository(private val context: Context) {
             trimmed.ifEmpty { AppSettings.DEFAULT_PACK_MANIFEST_URL }
     }
 
-    private suspend fun edit(block: (androidx.datastore.preferences.core.MutablePreferences) -> Unit) {
-        context.settingsDataStore.edit(block)
+    private suspend fun edit(block: (MutablePreferences) -> Unit) {
+        dataStore.edit(block)
     }
 
     private companion object {

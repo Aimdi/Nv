@@ -82,6 +82,7 @@ data class Combo(
     val id: Long = 0L,
     val name: String = "",
     val entries: List<TagEntry> = emptyList(),
+    val isFavorite: Boolean = false,
     val createdAt: Long = 0L,
     val updatedAt: Long = 0L,
 )

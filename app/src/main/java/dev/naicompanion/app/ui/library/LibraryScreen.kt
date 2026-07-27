@@ -102,18 +102,18 @@ fun LibraryScreen(
                 singleLine = true,
             )
 
-            if (tab == LibraryTab.PROMPTS && (state.folders.isNotEmpty() || state.favoritesOnly)) {
-                FlowRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    FilterChip(
-                        selected = state.favoritesOnly,
-                        onClick = viewModel::toggleFavoritesOnly,
-                        label = { Text("Favorites") },
-                    )
+            FlowRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                FilterChip(
+                    selected = state.favoritesOnly,
+                    onClick = viewModel::toggleFavoritesOnly,
+                    label = { Text("Favorites") },
+                )
+                if (tab == LibraryTab.PROMPTS) {
                     state.folders.forEach { folder ->
                         FilterChip(
                             selected = state.folderFilter == folder,
@@ -174,6 +174,7 @@ fun LibraryScreen(
                                     rendered = rendered,
                                     onCopy = { copy(rendered) },
                                     onLoad = { onLoadCombo(combo.id) },
+                                    onToggleFavorite = { viewModel.toggleComboFavorite(combo) },
                                     onDelete = { pendingComboDelete = combo },
                                 )
                             }
@@ -263,6 +264,7 @@ private fun ComboCard(
     rendered: String,
     onCopy: () -> Unit,
     onLoad: () -> Unit,
+    onToggleFavorite: () -> Unit,
     onDelete: () -> Unit,
 ) {
     Card(
@@ -272,7 +274,30 @@ private fun ComboCard(
         ),
     ) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(text = combo.name, style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = combo.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = onToggleFavorite) {
+                    Icon(
+                        imageVector = if (combo.isFavorite) {
+                            Icons.Default.Star
+                        } else {
+                            Icons.Outlined.StarBorder
+                        },
+                        contentDescription = "Toggle favorite",
+                        tint = if (combo.isFavorite) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    )
+                }
+            }
             Text(
                 text = "${combo.entries.size} tags",
                 style = MaterialTheme.typography.labelSmall,

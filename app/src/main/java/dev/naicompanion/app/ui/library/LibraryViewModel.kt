@@ -78,9 +78,8 @@ class LibraryViewModel(
         val (currentQuery, folder, favorites) = filters
         LibraryUiState(
             prompts = promptList,
-            combos = comboList.filterByQuery(currentQuery).let { list ->
-                if (favorites) list else list
-            },
+            combos = comboList.filterByQuery(currentQuery)
+                .filter { !favorites || it.isFavorite },
             folders = folders,
             query = currentQuery,
             folderFilter = folder,
@@ -116,8 +115,8 @@ class LibraryViewModel(
         viewModelScope.launch { promptRepository.setFavorite(prompt.id, !prompt.isFavorite) }
     }
 
-    fun toggleComboFavorite(combo: Combo, isFavorite: Boolean) {
-        viewModelScope.launch { comboRepository.setFavorite(combo.id, isFavorite) }
+    fun toggleComboFavorite(combo: Combo) {
+        viewModelScope.launch { comboRepository.setFavorite(combo.id, !combo.isFavorite) }
     }
 
     fun deletePrompt(prompt: PromptEntity) {

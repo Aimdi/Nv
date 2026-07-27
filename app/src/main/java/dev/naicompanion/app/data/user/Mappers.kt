@@ -27,6 +27,7 @@ fun ComboWithTags.toCombo(): Combo = Combo(
     id = combo.id,
     name = combo.name,
     entries = tags.sortedBy { it.position }.map { it.toTagEntry() },
+    isFavorite = combo.isFavorite,
     createdAt = combo.createdAt,
     updatedAt = combo.updatedAt,
 )
