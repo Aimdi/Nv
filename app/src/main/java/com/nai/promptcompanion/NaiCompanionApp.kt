@@ -50,8 +50,7 @@ class AppContainer(app: Application) {
     val imagePack = ImagePackManager(app, settings)
 
     val builderState = BuilderStateHolder(settings, appScope).apply {
-        loadPersistedDraft()
-        startAutoPersist()
+        restoreThenAutoPersist()
     }
 
     private val _catalogSeedState = MutableStateFlow<CatalogSeedState>(CatalogSeedState.Seeding)

@@ -35,17 +35,25 @@ class BuilderStateHolder(
         .map { NovelaiSyntax.render(it) }
         .stateIn(scope, SharingStarted.WhileSubscribed(5_000), "")
 
-    fun loadPersistedDraft() {
+    /**
+     * Restores the draft, then starts persisting changes. The ordering matters:
+     * auto-persist must not run before the restore, or the initial empty state
+     * could clobber the saved draft.
+     */
+    fun restoreThenAutoPersist() {
         scope.launch {
-            val raw = settings.builderDraftJson.first() ?: return@launch
-            runCatching {
-                json.decodeFromString<List<TagEntry>>(raw)
-            }.onSuccess { _entries.value = TagEntry.ensureIds(it) }
+            val raw = settings.builderDraftJson.first()
+            if (raw != null) {
+                runCatching {
+                    json.decodeFromString<List<TagEntry>>(raw)
+                }.onSuccess { _entries.value = TagEntry.ensureIds(it) }
+            }
+            startAutoPersist()
         }
     }
 
     @OptIn(FlowPreview::class)
-    fun startAutoPersist() {
+    private fun startAutoPersist() {
         scope.launch {
             entries.debounce(400).collect { list ->
                 settings.saveBuilderDraft(json.encodeToString(list))
