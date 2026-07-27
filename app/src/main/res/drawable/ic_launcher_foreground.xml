@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Stylized prompt braces { } around a spark -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M38,34 L34,34 Q30,34 30,38 L30,46 Q30,50 26,50 L24,50 L24,54 L26,54 Q30,54 30,58 L30,66 Q30,70 34,70 L38,70 L38,66 L36,66 Q34,66 34,64 L34,56 Q34,52 31,51 Q34,50 34,46 L34,38 Q34,36 36,36 L38,36 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M70,34 L74,34 Q78,34 78,38 L78,46 Q78,50 82,50 L84,50 L84,54 L82,54 Q78,54 78,58 L78,66 Q78,70 74,70 L70,70 L70,66 L72,66 Q74,66 74,64 L74,56 Q74,52 77,51 Q74,50 74,46 L74,38 Q74,36 72,36 L70,36 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,40 L58,50 L54,64 L50,50 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M46,46 L52,50 L46,54 L42,50 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M62,46 L66,50 L62,54 L56,50 Z" />
+</vector>

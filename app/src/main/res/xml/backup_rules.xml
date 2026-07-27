@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <include domain="database" path="." />
+    <include domain="sharedpref" path="." />
+    <include domain="file" path="." />
+    <!-- The downloaded preview image pack is re-downloadable; do not back it up. -->
+    <exclude domain="file" path="imagepack/" />
+</full-backup-content>
