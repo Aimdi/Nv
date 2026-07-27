@@ -1,0 +1,30 @@
+# Gradle
+.gradle/
+build/
+**/build/
+local.properties
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+
+# Android / Kotlin
+*.apk
+*.aab
+*.ap_
+*.dex
+captures/
+.externalNativeBuild/
+.cxx/
+*.keystore
+!debug.keystore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Preview pack working dirs
+/preview_pack_out/
+/tmp_preview/

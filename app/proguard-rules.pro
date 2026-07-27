@@ -1,0 +1,5 @@
+-keepattributes *Annotation*
+-keep class com.aimdi.nv.data.model.** { *; }
+-keep class com.aimdi.nv.data.export.** { *; }
+-dontwarn okhttp3.**
+-dontwarn okio.**
