@@ -1,0 +1,11 @@
+Third-party data attributions
+
+1) novelai-anime-v3-artist-comparison artists.json
+   Source: https://huggingface.co/datasets/deus-ex-machina/novelai-anime-v3-artist-comparison
+   License: Apache-2.0
+   Notes: NAI v3-era artist tags with post counts. Preview images (if downloaded) are from this dataset.
+
+2) Illustrious/NoobAI Style Explorer (optional expansion)
+   Source: https://github.com/ThetaCursed/Illustrious-NoobAI-Style-Explorer
+   License: MIT
+   Notes: SDXL-style previews; labeled separately from NAI v3 when installed.
