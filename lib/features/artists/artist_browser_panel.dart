@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -114,6 +116,7 @@ class _ArtistBrowserPanelState extends State<ArtistBrowserPanel> {
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
+                runSpacing: 4,
                 children: [
                   ChoiceChip(
                     label: const Text('Works'),
@@ -134,6 +137,11 @@ class _ArtistBrowserPanelState extends State<ArtistBrowserPanel> {
                     label: const Text('Online previews'),
                     selected: _onlinePreviews,
                     onSelected: (v) => setState(() => _onlinePreviews = v),
+                  ),
+                  ActionChip(
+                    avatar: const Icon(Icons.casino, size: 16),
+                    label: const Text('+2–3 to prompt'),
+                    onPressed: () => NvPromptBridge.addRandomArtists(context),
                   ),
                 ],
               ),
@@ -280,7 +288,8 @@ class _ArtistCard extends StatelessWidget {
   }
 }
 
-/// Tries each URL until one loads (HF folder fallback).
+/// Tries each URL until one loads. Times out hung requests so cards never
+/// spin forever when HuggingFace is slow or a sample is missing.
 class _FallbackNetworkImage extends StatefulWidget {
   const _FallbackNetworkImage({required this.urls, required this.fit});
 
@@ -292,28 +301,116 @@ class _FallbackNetworkImage extends StatefulWidget {
 }
 
 class _FallbackNetworkImageState extends State<_FallbackNetworkImage> {
+  static const _timeout = Duration(seconds: 10);
+  static const _headers = {
+    'User-Agent': 'Nv/1.0.2 (Flutter; Aimdi artist browser)',
+    'Accept': 'image/jpeg,image/*;q=0.8,*/*;q=0.5',
+  };
+
   int _index = 0;
+  bool _exhausted = false;
+  Timer? _timer;
+  int _attempt = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _armTimeout();
+  }
+
+  @override
+  void didUpdateWidget(covariant _FallbackNetworkImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_listEquals(oldWidget.urls, widget.urls)) {
+      _timer?.cancel();
+      _index = 0;
+      _exhausted = false;
+      _attempt++;
+      _armTimeout();
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  bool _listEquals(List<String> a, List<String> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  void _armTimeout() {
+    _timer?.cancel();
+    if (_exhausted || widget.urls.isEmpty) return;
+    final attempt = _attempt;
+    _timer = Timer(_timeout, () {
+      if (!mounted || attempt != _attempt) return;
+      _advance();
+    });
+  }
+
+  void _advance() {
+    if (!mounted || _exhausted) return;
+    if (_index < widget.urls.length - 1) {
+      setState(() {
+        _index += 1;
+        _attempt++;
+      });
+      _armTimeout();
+    } else {
+      _timer?.cancel();
+      setState(() {
+        _exhausted = true;
+        _attempt++;
+      });
+    }
+  }
+
+  void _onSuccess() {
+    _timer?.cancel();
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (_index >= widget.urls.length) {
-      return const Center(child: Icon(Icons.image_not_supported_outlined));
+    final t = context.t;
+    if (_exhausted || widget.urls.isEmpty || _index >= widget.urls.length) {
+      return ColoredBox(
+        color: t.surfaceMid,
+        child: Icon(Icons.image_not_supported_outlined, color: t.secondaryText),
+      );
     }
+
     return Image.network(
       widget.urls[_index],
+      key: ValueKey('preview-$_attempt-${widget.urls[_index]}'),
       fit: widget.fit,
+      headers: _headers,
       gaplessPlayback: true,
-      errorBuilder: (_, error, stackTrace) {
+      filterQuality: FilterQuality.low,
+      errorBuilder: (_, __, ___) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && _index < widget.urls.length - 1) {
-            setState(() => _index += 1);
-          }
+          if (mounted) _advance();
         });
-        return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+        return ColoredBox(
+          color: t.surfaceMid,
+          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        );
       },
       loadingBuilder: (context, child, progress) {
-        if (progress == null) return child;
-        return const Center(child: CircularProgressIndicator(strokeWidth: 2));
+        if (progress == null) {
+          _onSuccess();
+          return child;
+        }
+        return ColoredBox(
+          color: t.surfaceMid,
+          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        );
       },
     );
   }

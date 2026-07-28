@@ -129,10 +129,31 @@ class ArtistPreviewUrls {
 
   static String primary(String name) => _url(folderPrimary, name);
   static String fallback(String name) => _url(folderFallback, name);
-  static List<String> candidates(String name) => [primary(name), fallback(name)];
+
+  /// Ordered candidates. Tries both percent-encoded and raw filenames because
+  /// some CDNs are picky about parentheses in artist tags.
+  static List<String> candidates(String name) {
+    final seen = <String>{};
+    final out = <String>[];
+    void add(String url) {
+      if (seen.add(url)) out.add(url);
+    }
+
+    for (final folder in [folderPrimary, folderFallback]) {
+      add(_url(folder, name));
+      add(_urlRaw(folder, name));
+    }
+    return out;
+  }
 
   static String _url(String folder, String name) {
     final encoded = Uri.encodeComponent(name);
+    return '$_base/$folder/$encoded.jpg';
+  }
+
+  static String _urlRaw(String folder, String name) {
+    // Keep path-safe characters that appear in Danbooru artist names.
+    final encoded = Uri.encodeComponent(name).replaceAll('%28', '(').replaceAll('%29', ')');
     return '$_base/$folder/$encoded.jpg';
   }
 }

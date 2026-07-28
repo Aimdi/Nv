@@ -1261,39 +1261,55 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
       letterSpacing: 1.5,
       fontWeight: FontWeight.bold,
     );
+    final muted = TextStyle(
+      color: t.textDisabled,
+      fontSize: t.fontSize(mobile ? 10 : 8),
+      letterSpacing: 1.5,
+      fontWeight: FontWeight.bold,
+    );
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
           Icon(Icons.auto_awesome_mosaic, size: mobile ? 14 : 12, color: t.accent),
           const SizedBox(width: 6),
-          TextButton(
-            onPressed: () => NvPromptBridge.openChipComposer(context),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text('CHIP COMPOSER', style: style),
-          ),
-          Text('·', style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(10))),
-          TextButton(
-            onPressed: () => NvPromptBridge.openArtistBrowser(context),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text('ARTIST BROWSER', style: style),
-          ),
-          const Spacer(),
-          Text(
-            'AIMDI',
-            style: TextStyle(
-              color: t.textDisabled,
-              fontSize: t.fontSize(7),
-              letterSpacing: 1.5,
-              fontWeight: FontWeight.bold,
+          Flexible(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  TextButton(
+                    onPressed: () => NvPromptBridge.openChipComposer(context),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text('CHIP COMPOSER', style: style),
+                  ),
+                  Text('·', style: muted),
+                  TextButton(
+                    onPressed: () => NvPromptBridge.openArtistBrowser(context),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text('ARTIST BROWSER', style: style),
+                  ),
+                  Text('·', style: muted),
+                  TextButton.icon(
+                    onPressed: () => NvPromptBridge.addRandomArtists(context),
+                    icon: Icon(Icons.casino, size: mobile ? 14 : 12, color: t.accent),
+                    label: Text('+2–3 ARTISTS', style: style),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
