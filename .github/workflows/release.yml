@@ -55,7 +55,7 @@ jobs:
         run: |
           TAG="${{ github.event.inputs.tag || github.ref_name }}"
           SOURCE=$(find app/build/outputs/apk/release -name '*.apk' | head -n 1)
-          TARGET="nai-companion-${TAG}.apk"
+          TARGET="nv-${TAG}.apk"
           cp "$SOURCE" "$TARGET"
           sha256sum "$TARGET" > "$TARGET.sha256"
           echo "path=$TARGET" >> "$GITHUB_OUTPUT"

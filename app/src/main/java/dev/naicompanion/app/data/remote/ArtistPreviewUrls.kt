@@ -1,7 +1,6 @@
 package dev.naicompanion.app.data.remote
 
 import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 
 /**
  * On-demand preview URLs for the HuggingFace NovelAI v3 artist-comparison dataset.
@@ -32,7 +31,8 @@ object ArtistPreviewUrls {
         primary(name)
 
     private fun url(folder: String, name: String): String {
-        val encoded = URLEncoder.encode(name, StandardCharsets.UTF_8)
+        // String charset form is available below API 33 (Charset overload is not).
+        val encoded = URLEncoder.encode(name, "UTF-8")
             .replace("+", "%20")
         return "$BASE/$folder/$encoded.jpg"
     }
