@@ -91,6 +91,8 @@ fun SwipeModeScreen(
                         AsyncImage(
                             model = ImageRequest.Builder(context)
                                 .data(item.thumbnail)
+                                .memoryCacheKey(item.artist.name)
+                                .diskCacheKey(item.artist.name)
                                 .crossfade(true)
                                 .build(),
                             contentDescription = item.artist.displayName,

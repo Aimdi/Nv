@@ -10,6 +10,7 @@ import dev.naicompanion.app.data.catalog.ArtistEntity
 import dev.naicompanion.app.data.catalog.CatalogQuery
 import dev.naicompanion.app.data.catalog.CatalogSort
 import dev.naicompanion.app.data.packs.PackRepository
+import dev.naicompanion.app.data.remote.HfArtistPreview
 import dev.naicompanion.app.data.repository.CatalogRepository
 import dev.naicompanion.app.data.repository.CatalogStatus
 import dev.naicompanion.app.data.repository.FavoriteTagRepository
@@ -30,13 +31,14 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.io.File
 
 /** A catalog row plus the per-user and per-device state the grid needs to draw it. */
 data class BrowseItem(
     val artist: ArtistEntity,
     val isFavorite: Boolean,
-    val thumbnail: File?,
+    /** Local pack [File], remote [HfArtistPreview], or null when previews are disabled. */
+    val thumbnail: Any?,
+    val fullImage: Any?,
 ) {
     val kind: TagKind get() = TagKind.fromStorage(artist.kind)
 }
@@ -110,21 +112,33 @@ class BrowserViewModel(
         }
         BrowserUiState(
             items = filtered.map { artist ->
+                val localThumb = packRepository.resolvePreview(
+                    artist.source,
+                    artist.preview,
+                    PackRepository.PreviewSize.THUMB,
+                )
+                val localFull = packRepository.resolvePreview(
+                    artist.source,
+                    artist.preview,
+                    PackRepository.PreviewSize.FULL,
+                )
+                val remote = if (settings.onlineArtistPreviews) {
+                    HfArtistPreview(name = artist.name, diskCacheKey = artist.name)
+                } else {
+                    null
+                }
                 BrowseItem(
                     artist = artist,
                     isFavorite = artist.name in favoriteNames,
-                    thumbnail = packRepository.resolvePreview(
-                        artist.source,
-                        artist.preview,
-                        PackRepository.PreviewSize.THUMB,
-                    ),
+                    thumbnail = localThumb ?: remote,
+                    fullImage = localFull ?: remote,
                 )
             },
             filters = currentFilters,
             availableSources = sources,
             columns = settings.browserColumns,
             status = status,
-            anyPackInstalled = installedPacks.isNotEmpty(),
+            anyPackInstalled = installedPacks.isNotEmpty() || settings.onlineArtistPreviews,
             loading = false,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), BrowserUiState())
@@ -189,11 +203,7 @@ class BrowserViewModel(
         }
     }
 
-    fun detailImage(item: BrowseItem): File? = packRepository.resolvePreview(
-        item.artist.source,
-        item.artist.preview,
-        PackRepository.PreviewSize.FULL,
-    )
+    fun detailImage(item: BrowseItem): Any? = item.fullImage
 
     fun notifyAdded(item: BrowseItem) {
         _messages.tryEmit("Added ${item.artist.displayName} to the builder")

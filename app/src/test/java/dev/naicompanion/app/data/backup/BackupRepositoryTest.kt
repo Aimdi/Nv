@@ -130,7 +130,7 @@ class BackupRepositoryTest {
         seed()
         val encoded = backup.encode(backup.buildBackup(AppSettings()))
         assertThat(encoded).contains("\"schemaVersion\": 1")
-        assertThat(encoded).contains("dev.naicompanion.app")
+        assertThat(encoded).contains("com.aimdi.nv")
         assertThat(encoded).contains("\"appVersion\": \"0.1.0-test\"")
         assertThat(encoded).contains("\"exportedAt\": 42")
     }

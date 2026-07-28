@@ -8,12 +8,15 @@ import com.google.common.truth.Truth.assertThat
 import dev.naicompanion.app.core.prompt.NovelAiModel
 import dev.naicompanion.app.core.prompt.TagKind
 import dev.naicompanion.app.data.catalog.CatalogDatabase
+import dev.naicompanion.app.data.remote.DanbooruApi
+import dev.naicompanion.app.data.remote.DanbooruRepository
 import dev.naicompanion.app.data.repository.CatalogRepository
 import dev.naicompanion.app.data.repository.ComboRepository
 import dev.naicompanion.app.data.repository.DraftRepository
 import dev.naicompanion.app.data.repository.PromptRepository
 import dev.naicompanion.app.data.settings.SettingsRepository
 import dev.naicompanion.app.data.user.UserDatabase
+import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -28,12 +31,20 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.serialization.json.Json
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.mockwebserver.Dispatcher
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.RecordedRequest
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import retrofit2.Retrofit
 import java.io.File
 import java.nio.file.Files
 
@@ -54,6 +65,8 @@ class BuilderViewModelTest {
 
     private lateinit var dataStoreScope: CoroutineScope
     private lateinit var dataStoreDir: File
+    private lateinit var mockWebServer: MockWebServer
+    private lateinit var danbooruRepository: DanbooruRepository
 
     @Before
     fun setUp() {
@@ -90,6 +103,23 @@ class BuilderViewModelTest {
 
         comboRepository = ComboRepository(userDatabase.comboDao())
         promptRepository = PromptRepository(userDatabase.promptDao())
+
+        mockWebServer = MockWebServer().also { server ->
+            server.dispatcher = object : Dispatcher() {
+                override fun dispatch(request: RecordedRequest): MockResponse =
+                    MockResponse().setBody("[]")
+            }
+            server.start()
+        }
+        val json = Json { ignoreUnknownKeys = true }
+        danbooruRepository = DanbooruRepository(
+            Retrofit.Builder()
+                .baseUrl(mockWebServer.url("/"))
+                .client(OkHttpClient())
+                .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+                .build()
+                .create(DanbooruApi::class.java),
+        )
     }
 
     private fun preferenceStore(name: String) = PreferenceDataStoreFactory.create(
@@ -104,6 +134,7 @@ class BuilderViewModelTest {
         context.getDatabasePath("catalog-under-test.db").delete()
         dataStoreScope.cancel()
         dataStoreDir.deleteRecursively()
+        mockWebServer.shutdown()
         Dispatchers.resetMain()
     }
 
@@ -113,6 +144,7 @@ class BuilderViewModelTest {
         catalogRepository = CatalogRepository(catalogDatabase.catalogDao()),
         comboRepository = comboRepository,
         promptRepository = promptRepository,
+        danbooruRepository = danbooruRepository,
     )
 
     /** uiState is a WhileSubscribed flow, so tests need a live collector to see updates. */
@@ -388,7 +420,7 @@ class BuilderViewModelTest {
 
         viewModel.onSearchQueryChange("wlop")
         advanceUntilIdle()
-        viewModel.addCatalogTag(viewModel.suggestions.value.first { it.name == "wlop" })
+        viewModel.addSuggestion(viewModel.suggestions.value.first { it.name == "wlop" })
         advanceUntilIdle()
 
         assertThat(viewModel.uiState.value.rendered).isEqualTo("artist:wlop")

@@ -157,6 +157,33 @@ fun SettingsScreen(
                 }
             }
 
+            SettingsSection("Online enrichment") {
+                Text(
+                    text = "Generation stays offline (copy → paste into NovelAI). These toggles " +
+                        "only fetch tag metadata and SFW artist preview samples.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                SettingsToggle(
+                    title = "Live Danbooru tag search",
+                    subtitle = "Merge validated autocomplete results with the offline catalog.",
+                    checked = settings.onlineTagSearch,
+                    onCheckedChange = viewModel::setOnlineTagSearch,
+                )
+                SettingsToggle(
+                    title = "Online artist previews",
+                    subtitle = "Load HuggingFace sample images on demand and cache them on device.",
+                    checked = settings.onlineArtistPreviews,
+                    onCheckedChange = viewModel::setOnlineArtistPreviews,
+                )
+                SettingsToggle(
+                    title = "Allow NSFW rating tags",
+                    subtitle = "When off (default), rating:* suggestions other than general are hidden.",
+                    checked = settings.allowNsfwTags,
+                    onCheckedChange = viewModel::setAllowNsfwTags,
+                )
+            }
+
             SettingsSection("Backup") {
                 Text(
                     text = "Exports every prompt, combo and favorite as versioned JSON. You " +
@@ -186,7 +213,7 @@ fun SettingsScreen(
             }
 
             SettingsSection("About") {
-                Text("NAI Companion ${viewModel.appVersion}")
+                Text("Nv ${viewModel.appVersion}")
                 Text(
                     text = when (val status = catalogStatus) {
                         is CatalogStatus.Ready ->
@@ -200,8 +227,8 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    text = "This app composes prompts offline. It never contacts NovelAI and " +
-                        "cannot generate images.",
+                    text = "Nv composes NovelAI prompts on-device. It never calls a generation " +
+                        "API — copy the prompt and paste it into NovelAI yourself.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

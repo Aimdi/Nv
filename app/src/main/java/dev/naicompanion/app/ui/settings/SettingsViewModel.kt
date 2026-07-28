@@ -57,6 +57,15 @@ class SettingsViewModel(
     fun setCopyOpensNovelAi(value: Boolean) =
         launchSetting { settingsRepository.setCopyOpensNovelAi(value) }
 
+    fun setOnlineTagSearch(value: Boolean) =
+        launchSetting { settingsRepository.setOnlineTagSearch(value) }
+
+    fun setOnlineArtistPreviews(value: Boolean) =
+        launchSetting { settingsRepository.setOnlineArtistPreviews(value) }
+
+    fun setAllowNsfwTags(value: Boolean) =
+        launchSetting { settingsRepository.setAllowNsfwTags(value) }
+
     fun suggestedBackupFileName(): String = backupRepository.suggestedFileName()
 
     fun export(uri: Uri) {

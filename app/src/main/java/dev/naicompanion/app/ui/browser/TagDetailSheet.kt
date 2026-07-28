@@ -46,13 +46,12 @@ import dev.naicompanion.app.core.prompt.TagEntry
 import dev.naicompanion.app.ui.builder.formatPostCount
 import dev.naicompanion.app.ui.theme.PromptPreviewTextStyle
 import dev.naicompanion.app.ui.util.ClipboardBridge
-import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun TagDetailSheet(
     item: BrowseItem,
-    fullImage: File?,
+    fullImage: Any?,
     onDismiss: () -> Unit,
     onAdd: () -> Unit,
     onToggleFavorite: () -> Unit,
@@ -86,7 +85,12 @@ fun TagDetailSheet(
             ) {
                 if (fullImage != null) {
                     AsyncImage(
-                        model = ImageRequest.Builder(context).data(fullImage).crossfade(true).build(),
+                        model = ImageRequest.Builder(context)
+                            .data(fullImage)
+                            .memoryCacheKey(item.artist.name)
+                            .diskCacheKey(item.artist.name)
+                            .crossfade(true)
+                            .build(),
                         contentDescription = item.artist.displayName,
                         contentScale = ContentScale.Fit,
                         modifier = Modifier.fillMaxSize(),
@@ -98,7 +102,7 @@ fun TagDetailSheet(
                     ) {
                         Icon(Icons.Default.ImageNotSupported, contentDescription = null)
                         Text(
-                            text = "No preview installed for this source",
+                            text = "No preview available for this artist",
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }

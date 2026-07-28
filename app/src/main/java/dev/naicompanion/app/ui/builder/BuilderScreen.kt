@@ -22,7 +22,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.DeleteSweep
@@ -65,9 +64,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.naicompanion.app.core.prompt.TagEntry
 import dev.naicompanion.app.core.prompt.TagKind
-import dev.naicompanion.app.data.catalog.ArtistEntity
+import dev.naicompanion.app.data.remote.TagSuggestion
 import dev.naicompanion.app.ui.common.SaveDialog
 import dev.naicompanion.app.ui.theme.PromptPreviewTextStyle
+import dev.naicompanion.app.ui.theme.TagCategoryColors
 import dev.naicompanion.app.ui.util.ClipboardBridge
 import dev.naicompanion.app.ui.util.ShareBridge
 import kotlinx.coroutines.launch
@@ -163,7 +163,7 @@ fun BuilderScreen(
                 if (suggestions.isNotEmpty()) {
                     SuggestionList(
                         suggestions = suggestions,
-                        onPick = { viewModel.addCatalogTag(it) },
+                        onPick = { viewModel.addSuggestion(it) },
                     )
                 }
 
@@ -191,7 +191,7 @@ fun BuilderScreen(
                     val shouldConfirm = ClipboardBridge.copy(context, state.rendered)
                     if (state.settings.copyOpensNovelAi) ShareBridge.openNovelAi(context)
                     if (shouldConfirm) {
-                        scope.launch { snackbarHostState.showSnackbar("Prompt copied") }
+                        scope.launch { snackbarHostState.showSnackbar("Prompt copied — paste into NovelAI") }
                     }
                 },
                 onShare = { ShareBridge.shareText(context, state.rendered) },
@@ -275,35 +275,48 @@ private fun TagInputField(
 }
 
 @Composable
-private fun SuggestionList(suggestions: List<ArtistEntity>, onPick: (ArtistEntity) -> Unit) {
+private fun SuggestionList(suggestions: List<TagSuggestion>, onPick: (TagSuggestion) -> Unit) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         modifier = Modifier.fillMaxWidth(),
     ) {
         LazyColumn(modifier = Modifier.heightIn(max = 220.dp)) {
-            items(suggestions, key = { it.id }) { artist ->
+            items(suggestions, key = { "${it.source}:${it.name}" }) { suggestion ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onPick(artist) }
+                        .clickable { onPick(suggestion) }
                         .padding(horizontal = 14.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    if (TagKind.fromStorage(artist.kind) == TagKind.ARTIST) {
-                        Icon(
-                            Icons.Default.Brush,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
+                    Box(
+                        modifier = Modifier
+                            .width(4.dp)
+                            .heightIn(min = 28.dp)
+                            .background(
+                                TagCategoryColors.forCategory(suggestion.category),
+                                RoundedCornerShape(2.dp),
+                            ),
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = suggestion.displayName,
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                        Text(
+                            text = buildString {
+                                append(TagCategoryColors.label(suggestion.category))
+                                if (suggestion.source == TagSuggestion.Source.DANBOORU) {
+                                    append(" · online")
+                                }
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     Text(
-                        text = artist.displayName,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Text(
-                        text = formatPostCount(artist.postCount),
+                        text = formatPostCount(suggestion.postCount),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

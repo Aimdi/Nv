@@ -6,12 +6,13 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import dev.naicompanion.app.core.prompt.NovelAiPromptParser
-import dev.naicompanion.app.core.prompt.NovelAiPromptRenderer
 import dev.naicompanion.app.core.prompt.RenderWarning
 import dev.naicompanion.app.core.prompt.TagEntry
 import dev.naicompanion.app.core.prompt.TagKind
-import dev.naicompanion.app.data.catalog.ArtistEntity
+import dev.naicompanion.app.core.prompt.WeightEngine
 import dev.naicompanion.app.data.catalog.CatalogQuery
+import dev.naicompanion.app.data.remote.DanbooruRepository
+import dev.naicompanion.app.data.remote.TagSuggestion
 import dev.naicompanion.app.data.repository.CatalogRepository
 import dev.naicompanion.app.data.repository.ComboRepository
 import dev.naicompanion.app.data.repository.DraftRepository
@@ -32,8 +33,10 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -60,6 +63,7 @@ class BuilderViewModel(
     private val catalogRepository: CatalogRepository,
     private val comboRepository: ComboRepository,
     private val promptRepository: PromptRepository,
+    private val danbooruRepository: DanbooruRepository,
 ) : ViewModel() {
 
     private val entries = MutableStateFlow<List<TagEntry>>(emptyList())
@@ -79,7 +83,7 @@ class BuilderViewModel(
 
     val uiState: StateFlow<BuilderUiState> =
         combine(entries, settingsRepository.settings, comboName) { tags, settings, name ->
-            val result = NovelAiPromptRenderer.renderWithWarnings(tags, settings.renderOptions)
+            val result = WeightEngine.renderWithWarnings(tags, settings.renderOptions)
             BuilderUiState(
                 entries = tags,
                 settings = settings,
@@ -89,16 +93,45 @@ class BuilderViewModel(
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), BuilderUiState())
 
-    val suggestions: StateFlow<List<ArtistEntity>> = _searchQuery
-        .debounce(150)
-        .distinctUntilChanged()
-        .flatMapLatest { query ->
+    /**
+     * Local FTS results first, then live Danbooru autocomplete (when enabled), de-duplicated by
+     * tag name. Debounced at 250 ms to stay polite to Danbooru's public rate limit.
+     */
+    val suggestions: StateFlow<List<TagSuggestion>> = combine(
+        _searchQuery.debounce(250).distinctUntilChanged(),
+        settingsRepository.settings.map { it.onlineTagSearch to it.allowNsfwTags }
+            .distinctUntilChanged(),
+    ) { query, onlineFlags -> query to onlineFlags }
+        .flatMapLatest { (query, onlineFlags) ->
+            val (onlineEnabled, allowNsfw) = onlineFlags
             if (query.isBlank()) {
                 flowOf(emptyList())
             } else {
-                catalogRepository.observe(
-                    CatalogQuery(text = query, limit = SUGGESTION_LIMIT),
-                )
+                flow {
+                    val local = catalogRepository.observe(
+                        CatalogQuery(text = query, limit = SUGGESTION_LIMIT),
+                    ).first().map { artist ->
+                        TagSuggestion.fromLocal(
+                            name = artist.name,
+                            displayName = artist.displayName,
+                            kind = artist.kind,
+                            postCount = artist.postCount,
+                        )
+                    }
+                    emit(local)
+
+                    if (onlineEnabled) {
+                        val remote = danbooruRepository.autocomplete(
+                            query = query,
+                            limit = 20,
+                            allowNsfwMeta = allowNsfw,
+                        )
+                        val seen = local.map { it.name.lowercase() }.toHashSet()
+                        val merged = local + remote.map(TagSuggestion::fromDanbooru)
+                            .filter { seen.add(it.name.lowercase()) }
+                        emit(merged)
+                    }
+                }
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -145,8 +178,8 @@ class BuilderViewModel(
         _searchQuery.value = ""
     }
 
-    fun addCatalogTag(artist: ArtistEntity) {
-        addTag(artist.name, TagKind.fromStorage(artist.kind))
+    fun addSuggestion(suggestion: TagSuggestion) {
+        addTag(suggestion.name, TagKind.fromStorage(suggestion.kindStorage))
         _searchQuery.value = ""
     }
 
@@ -305,6 +338,7 @@ class BuilderViewModel(
                     catalogRepository = container.catalogRepository,
                     comboRepository = container.comboRepository,
                     promptRepository = container.promptRepository,
+                    danbooruRepository = container.danbooruRepository,
                 )
             }
         }

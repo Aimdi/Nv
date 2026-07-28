@@ -265,6 +265,8 @@ private fun TagCard(
                 AsyncImage(
                     model = ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
                         .data(item.thumbnail)
+                        .memoryCacheKey(item.artist.name)
+                        .diskCacheKey(item.artist.name)
                         .crossfade(true)
                         .build(),
                     contentDescription = item.artist.displayName,
@@ -352,8 +354,8 @@ private fun PackHint(onOpenPacks: () -> Unit) {
             Column(Modifier.weight(1f)) {
                 Text("No preview images yet", style = MaterialTheme.typography.titleSmall)
                 Text(
-                    text = "Search and favorites work offline right now. Install a preview pack " +
-                        "to see what each artist tag looks like.",
+                    text = "Enable online artist previews in Settings, or install an offline " +
+                        "preview pack to see what each artist tag looks like.",
                     style = MaterialTheme.typography.bodySmall,
                 )
             }

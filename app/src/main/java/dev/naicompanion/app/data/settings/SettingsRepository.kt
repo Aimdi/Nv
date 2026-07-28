@@ -24,6 +24,15 @@ data class AppSettings(
     val copyOpensNovelAi: Boolean = false,
     val packManifestUrl: String = DEFAULT_PACK_MANIFEST_URL,
     val onlyWithPreview: Boolean = false,
+    /** When true, builder search merges live Danbooru autocomplete with the local catalog. */
+    val onlineTagSearch: Boolean = true,
+    /** When true, artist browser loads HuggingFace CDN previews on demand via Coil. */
+    val onlineArtistPreviews: Boolean = true,
+    /**
+     * Conservative NSFW gate for online suggestions. Default off: rating:* meta tags other than
+     * general are hidden from Danbooru autocomplete.
+     */
+    val allowNsfwTags: Boolean = false,
 ) {
     val renderOptions: RenderOptions
         get() = RenderOptions(
@@ -57,6 +66,9 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
             copyOpensNovelAi = prefs[KEY_COPY_OPENS] ?: false,
             packManifestUrl = prefs[KEY_MANIFEST_URL] ?: AppSettings.DEFAULT_PACK_MANIFEST_URL,
             onlyWithPreview = prefs[KEY_ONLY_PREVIEW] ?: false,
+            onlineTagSearch = prefs[KEY_ONLINE_SEARCH] ?: true,
+            onlineArtistPreviews = prefs[KEY_ONLINE_PREVIEWS] ?: true,
+            allowNsfwTags = prefs[KEY_ALLOW_NSFW] ?: false,
         )
     }
 
@@ -68,6 +80,9 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
     suspend fun setBrowserSort(value: CatalogSort) = edit { it[KEY_SORT] = value.name }
     suspend fun setCopyOpensNovelAi(value: Boolean) = edit { it[KEY_COPY_OPENS] = value }
     suspend fun setOnlyWithPreview(value: Boolean) = edit { it[KEY_ONLY_PREVIEW] = value }
+    suspend fun setOnlineTagSearch(value: Boolean) = edit { it[KEY_ONLINE_SEARCH] = value }
+    suspend fun setOnlineArtistPreviews(value: Boolean) = edit { it[KEY_ONLINE_PREVIEWS] = value }
+    suspend fun setAllowNsfwTags(value: Boolean) = edit { it[KEY_ALLOW_NSFW] = value }
 
     suspend fun setPackManifestUrl(value: String) = edit {
         val trimmed = value.trim()
@@ -89,5 +104,8 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
         val KEY_COPY_OPENS = booleanPreferencesKey("copy_opens_novelai")
         val KEY_MANIFEST_URL = stringPreferencesKey("pack_manifest_url")
         val KEY_ONLY_PREVIEW = booleanPreferencesKey("only_with_preview")
+        val KEY_ONLINE_SEARCH = booleanPreferencesKey("online_tag_search")
+        val KEY_ONLINE_PREVIEWS = booleanPreferencesKey("online_artist_previews")
+        val KEY_ALLOW_NSFW = booleanPreferencesKey("allow_nsfw_tags")
     }
 }

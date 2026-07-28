@@ -74,7 +74,9 @@ data class BackupFile(
 ) {
     companion object {
         const val CURRENT_SCHEMA_VERSION = 1
-        const val APP_ID = "dev.naicompanion.app"
+        const val APP_ID = "com.aimdi.nv"
+        /** Older exports from the pre-rebrand package id. */
+        const val LEGACY_APP_ID = "dev.naicompanion.app"
     }
 }
 

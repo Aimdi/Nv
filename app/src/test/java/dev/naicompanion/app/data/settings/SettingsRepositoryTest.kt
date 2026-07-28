@@ -50,6 +50,9 @@ class SettingsRepositoryTest {
         assertThat(settings.underscoresToSpaces).isTrue()
         assertThat(settings.artistPrefix).isTrue()
         assertThat(settings.browserColumns).isEqualTo(3)
+        assertThat(settings.onlineTagSearch).isTrue()
+        assertThat(settings.onlineArtistPreviews).isTrue()
+        assertThat(settings.allowNsfwTags).isFalse()
     }
 
     @Test
@@ -59,6 +62,8 @@ class SettingsRepositoryTest {
         repository.setMultilineSeparator(true)
         repository.setBrowserSort(CatalogSort.NAME_ASC)
         repository.setCopyOpensNovelAi(true)
+        repository.setOnlineTagSearch(false)
+        repository.setAllowNsfwTags(true)
 
         val settings = repository.settings.first()
         assertThat(settings.model).isEqualTo(NovelAiModel.V3)
@@ -66,6 +71,8 @@ class SettingsRepositoryTest {
         assertThat(settings.multilineSeparator).isTrue()
         assertThat(settings.browserSort).isEqualTo(CatalogSort.NAME_ASC)
         assertThat(settings.copyOpensNovelAi).isTrue()
+        assertThat(settings.onlineTagSearch).isFalse()
+        assertThat(settings.allowNsfwTags).isTrue()
     }
 
     @Test
