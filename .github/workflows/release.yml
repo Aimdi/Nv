@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Tag to release (e.g. v0.2.0)"
+        description: "Tag to release (e.g. v1.0.0)"
         required: true
 
 permissions:
@@ -23,16 +23,19 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
       - uses: android-actions/setup-android@v3
 
-      - uses: gradle/actions/setup-gradle@v4
+      - name: Install dependencies
+        run: flutter pub get
 
-      - name: Run tests before publishing
-        run: ./gradlew testDebugUnitTest lintDebug
+      - name: Test
+        run: flutter test
 
-      # Prefer a dedicated release keystore (needed for Obtainium signature continuity).
-      # When secrets are absent, assembleRelease falls back to the debug key so a
-      # sideloadable APK is still published.
       - name: Restore signing keystore
         id: keystore
         env:
@@ -44,21 +47,22 @@ jobs:
             exit 0
           fi
           echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
+          cat > android/key.properties <<EOF
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          storeFile=$RUNNER_TEMP/release.jks
+          EOF
           echo "signed=true" >> "$GITHUB_OUTPUT"
 
       - name: Build release APK
-        env:
-          ANDROID_KEYSTORE_FILE: ${{ steps.keystore.outputs.signed == 'true' && format('{0}/release.jks', runner.temp) || '' }}
-          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-        run: ./gradlew assembleRelease
+        run: flutter build apk --release
 
       - name: Name the APK after the tag
         id: apk
         run: |
           TAG="${{ github.event.inputs.tag || github.ref_name }}"
-          SOURCE=$(find app/build/outputs/apk/release -name '*.apk' | head -n 1)
+          SOURCE=$(find build/app/outputs/flutter-apk -name '*.apk' | head -n 1)
           TARGET="nv-${TAG}.apk"
           cp "$SOURCE" "$TARGET"
           sha256sum "$TARGET" > "$TARGET.sha256"
@@ -78,4 +82,4 @@ jobs:
 
       - name: Clean up the keystore
         if: always()
-        run: rm -f "$RUNNER_TEMP/release.jks"
+        run: rm -f "$RUNNER_TEMP/release.jks" android/key.properties

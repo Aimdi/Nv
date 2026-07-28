@@ -1,0 +1,343 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../../core/l10n/l10n_extensions.dart';
+import '../../core/services/preferences_service.dart';
+import '../../core/utils/responsive.dart';
+import '../../core/theme/theme_extensions.dart';
+import '../../core/theme/vision_tokens.dart';
+import 'widgets/wildcard_manager.dart';
+import 'widgets/preset_manager.dart';
+import 'widgets/style_editor.dart';
+import 'widgets/app_settings.dart';
+import 'widgets/tag_library_manager.dart';
+import 'widgets/theme_builder.dart';
+import 'widgets/pack_manager.dart';
+import 'slideshow/widgets/slideshow_launcher.dart';
+import 'cascade/widgets/cascade_editor.dart';
+import 'img2img/widgets/img2img_editor.dart';
+import 'director_tools/widgets/director_tools_editor.dart';
+import 'enhance/widgets/enhance_editor.dart';
+import 'widgets/references_manager.dart';
+import 'ml/widgets/ml_models_manager.dart';
+import '../text_gen/widgets/text_gen_panel.dart';
+import '../characters/widgets/characters_page.dart';
+import '../composer/chip_composer_panel.dart';
+import '../artists/artist_browser_panel.dart';
+
+class ToolsHubScreen extends StatefulWidget {
+  final String? initialToolId;
+  final String? initialStyleName;
+  const ToolsHubScreen({super.key, this.initialToolId, this.initialStyleName});
+
+  @override
+  State<ToolsHubScreen> createState() => _ToolsHubScreenState();
+}
+
+class _ToolsHubScreenState extends State<ToolsHubScreen> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+  final FocusNode _toolsFocusNode = FocusNode();
+  final ScrollController _sidebarScrollController = ScrollController();
+  final ScrollController _drawerScrollController = ScrollController();
+  bool _isSidebarExpanded = true;
+  late String _activeToolId;
+
+  late final PreferencesService _prefs;
+
+  @override
+  void initState() {
+    super.initState();
+    _prefs = Provider.of<PreferencesService>(context, listen: false);
+    if (widget.initialToolId != null) {
+      _activeToolId = widget.initialToolId!;
+    } else {
+      _activeToolId = _prefs.lastToolId ?? 'settings';
+      // On mobile, auto-open the tool drawer when no specific tool was requested
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && isMobile(context)) {
+          _scaffoldKey.currentState?.openEndDrawer();
+        }
+      });
+    }
+  }
+
+  void _selectTool(String id) {
+    setState(() => _activeToolId = id);
+    _prefs.setLastToolId(id);
+  }
+
+  List<ToolItem> _getTools(BuildContext context) {
+    final l = context.l;
+    return [
+      ToolItem(id: 'chip_composer', name: 'CHIP COMPOSER', icon: Icons.view_week),
+      ToolItem(id: 'artist_browser', name: 'ARTIST BROWSER', icon: Icons.palette),
+      ToolItem(id: 'wildcards', name: l.toolsWildcards.toUpperCase(), icon: Icons.style),
+      ToolItem(id: 'tag_library', name: l.toolsTagLibrary.toUpperCase(), icon: Icons.local_offer),
+      ToolItem(id: 'presets', name: l.toolsPresets.toUpperCase(), icon: Icons.tune),
+      ToolItem(id: 'styles', name: l.toolsStyles.toUpperCase(), icon: Icons.auto_awesome),
+      ToolItem(id: 'director_ref', name: l.toolsReferences.toUpperCase(), icon: Icons.photo_library),
+      ToolItem(id: 'characters', name: 'CHARACTERS', icon: Icons.people_alt),
+      ToolItem(id: 'cascade', name: l.toolsCascadeEditor.toUpperCase(), icon: Icons.movie_filter),
+      ToolItem(id: 'img2img', name: l.toolsImg2imgEditor.toUpperCase(), icon: Icons.brush),
+      ToolItem(id: 'director_tools', name: l.toolsDirectorTools.toUpperCase(), icon: Icons.auto_fix_high),
+      ToolItem(id: 'enhance', name: l.toolsEnhance.toUpperCase(), icon: Icons.hd),
+      ToolItem(id: 'slideshow', name: l.toolsSlideshow.toUpperCase(), icon: Icons.slideshow),
+      ToolItem(id: 'ml_models', name: l.mlModels.toUpperCase(), icon: Icons.psychology),
+      ToolItem(id: 'text_gen', name: l.toolsTextGen.toUpperCase(), icon: Icons.notes),
+      ToolItem(id: 'packs', name: l.toolsPacks.toUpperCase(), icon: Icons.inventory_2),
+      ToolItem(id: 'theme', name: l.toolsTheme.toUpperCase(), icon: Icons.palette),
+      ToolItem(id: 'settings', name: l.toolsSettings.toUpperCase(), icon: Icons.settings),
+    ];
+  }
+
+  @override
+  void dispose() {
+    _toolsFocusNode.dispose();
+    _sidebarScrollController.dispose();
+    _drawerScrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mobile = isMobile(context);
+    final t = context.t;
+    final l = context.l;
+    final tools = _getTools(context);
+    final activeTool = tools.firstWhere((tool) => tool.id == _activeToolId, orElse: () => tools.first);
+
+    return Focus(
+      focusNode: _toolsFocusNode,
+      autofocus: true,
+      onKeyEvent: (node, event) {
+        if (event is! KeyDownEvent) return KeyEventResult.ignored;
+        if (event.logicalKey == LogicalKeyboardKey.escape) {
+          Navigator.pop(context);
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Scaffold(
+      key: _scaffoldKey,
+      backgroundColor: t.background,
+      appBar: AppBar(
+        backgroundColor: t.background,
+        elevation: 0,
+        toolbarHeight: mobile ? 48 : 32,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, size: mobile ? 20 : 14, color: t.secondaryText),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          mobile ? activeTool.name : l.toolsHub.toUpperCase(),
+          style: TextStyle(
+            letterSpacing: 4,
+            fontSize: t.titleSize(mobile ? 12 : 10),
+            fontWeight: FontWeight.w900,
+            color: t.headerText,
+          ),
+        ),
+        actions: mobile
+            ? [
+                IconButton(
+                  icon: Icon(Icons.menu, size: 22, color: t.secondaryText),
+                  tooltip: l.commonMenu,
+                  onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+                ),
+              ]
+            : null,
+      ),
+      endDrawer: mobile
+          ? Drawer(
+              backgroundColor: t.surfaceMid,
+              child: SafeArea(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      child: Text(l.toolsTitle.toUpperCase(), style: TextStyle(color: t.secondaryText, fontSize: t.titleSize(10), letterSpacing: 2, fontWeight: FontWeight.bold)),
+                    ),
+                    Divider(height: 1, color: t.borderMedium),
+                    Expanded(
+                      child: Scrollbar(
+                        controller: _drawerScrollController,
+                        thumbVisibility: true,
+                        child: ListView(
+                          controller: _drawerScrollController,
+                          padding: EdgeInsets.zero,
+                          children: tools.map((tool) {
+                            final isActive = _activeToolId == tool.id;
+                            return ListTile(
+                              leading: Icon(tool.icon, size: 20, color: isActive ? t.accent : t.secondaryText),
+                              title: Text(
+                                tool.name,
+                                style: TextStyle(
+                                  fontSize: t.titleSize(12),
+                                  letterSpacing: 2,
+                                  fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                                  color: isActive ? t.accent : t.secondaryText,
+                                ),
+                              ),
+                              selected: isActive,
+                              selectedTileColor: t.borderSubtle,
+                              onTap: () {
+                                _selectTool(tool.id);
+                                Navigator.pop(context); // close drawer
+                              },
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : null,
+      body: mobile
+          ? SafeArea(top: false, child: _buildToolContent())
+          : Row(
+              children: [
+                _buildSidebar(t, tools),
+                VerticalDivider(width: 1, color: t.borderMedium),
+                Expanded(
+                  child: _buildToolContent(),
+                ),
+              ],
+            ),
+    ),
+    );
+  }
+
+  Widget _buildSidebar(VisionTokens t, List<ToolItem> tools) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    // Expand sidebar width on wider screens: 180px base, up to 240px on very wide screens
+    final double expandedWidth = screenWidth >= 1600 ? 240 : (screenWidth >= 1200 ? 210 : 180);
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: _isSidebarExpanded ? expandedWidth : 56,
+      color: t.surfaceMid,
+      child: Column(
+        children: [
+          const SizedBox(height: 8),
+          IconButton(
+            icon: Icon(
+              _isSidebarExpanded ? Icons.chevron_left : Icons.menu,
+              size: 16,
+              color: t.secondaryText,
+            ),
+            tooltip: _isSidebarExpanded ? context.l.sidebarCollapse : context.l.sidebarExpand,
+            onPressed: () => setState(() => _isSidebarExpanded = !_isSidebarExpanded),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: Scrollbar(
+              controller: _sidebarScrollController,
+              thumbVisibility: false,
+              child: ListView(
+                controller: _sidebarScrollController,
+                padding: EdgeInsets.zero,
+                children: tools.map((tool) => _buildSidebarItem(tool, t)).toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebarItem(ToolItem tool, VisionTokens t) {
+    final bool isActive = _activeToolId == tool.id;
+    return InkWell(
+      onTap: () => _selectTool(tool.id),
+      child: Container(
+        height: 48,
+        decoration: BoxDecoration(
+          border: Border(
+            right: BorderSide(
+              color: isActive ? t.accent : Colors.transparent,
+              width: 2,
+            ),
+          ),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 54,
+              child: Icon(
+                tool.icon,
+                size: 16,
+                color: isActive ? t.accent : t.secondaryText,
+              ),
+            ),
+            if (_isSidebarExpanded)
+              Expanded(
+                child: Text(
+                  tool.name,
+                  style: TextStyle(
+                    fontSize: t.fontSize(9),
+                    letterSpacing: 2,
+                    fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                    color: isActive ? t.accent : t.secondaryText,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildToolContent() {
+    switch (_activeToolId) {
+      case 'chip_composer':
+        return const ChipComposerPanel();
+      case 'artist_browser':
+        return const ArtistBrowserPanel();
+      case 'wildcards':
+        return const WildcardManager();
+      case 'tag_library':
+        return const TagLibraryManager();
+      case 'presets':
+        return const PresetManager();
+      case 'styles':
+        return StyleEditor(initialStyleName: widget.initialStyleName);
+      case 'director_ref':
+        return const ReferencesManager();
+      case 'characters':
+        return const CharactersPage();
+      case 'cascade':
+        return const CascadeEditor();
+      case 'img2img':
+        return const Img2ImgEditor();
+      case 'director_tools':
+        return const DirectorToolsEditor();
+      case 'enhance':
+        return const EnhanceEditor();
+      case 'slideshow':
+        return const SlideshowLauncher();
+      case 'ml_models':
+        return const MLModelsManager();
+      case 'text_gen':
+        return const TextGenPanel();
+      case 'packs':
+        return const PackManager();
+      case 'theme':
+        return const ThemeBuilder();
+      case 'settings':
+        return const AppSettings();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+}
+
+class ToolItem {
+  final String id;
+  final String name;
+  final IconData icon;
+
+  ToolItem({required this.id, required this.name, required this.icon});
+}
