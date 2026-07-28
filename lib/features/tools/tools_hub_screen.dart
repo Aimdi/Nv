@@ -69,8 +69,8 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
   List<ToolItem> _getTools(BuildContext context) {
     final l = context.l;
     return [
-      ToolItem(id: 'chip_composer', name: 'CHIP COMPOSER', icon: Icons.view_week),
-      ToolItem(id: 'artist_browser', name: 'ARTIST BROWSER', icon: Icons.palette),
+      ToolItem(id: 'chip_composer', name: 'NV CHIPS', icon: Icons.view_week),
+      ToolItem(id: 'artist_browser', name: 'NV ARTISTS', icon: Icons.brush),
       ToolItem(id: 'wildcards', name: l.toolsWildcards.toUpperCase(), icon: Icons.style),
       ToolItem(id: 'tag_library', name: l.toolsTagLibrary.toUpperCase(), icon: Icons.local_offer),
       ToolItem(id: 'presets', name: l.toolsPresets.toUpperCase(), icon: Icons.tune),

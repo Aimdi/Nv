@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'core/utils/app_snackbar.dart';
+import 'core/utils/nv_prompt_bridge.dart';
 import 'core/widgets/confirm_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -752,6 +753,30 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
               ),
               const SizedBox(width: 8),
               TextButton(
+                onPressed: () => NvPromptBridge.openChipComposer(context),
+                child: Text(
+                  'CHIPS',
+                  style: TextStyle(
+                    color: t.accent,
+                    fontSize: t.fontSize(mobile ? 11 : 8),
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => NvPromptBridge.openArtistBrowser(context),
+                child: Text(
+                  'ARTISTS',
+                  style: TextStyle(
+                    color: t.accent,
+                    fontSize: t.fontSize(mobile ? 11 : 8),
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              TextButton(
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -1079,6 +1104,7 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
           ),
           if (context.read<PreferencesService>().showSeedControl)
             _buildSeedRow(context, notifier, state, t),
+          _buildAimdiPromptTools(context, mobile, t),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -1221,6 +1247,54 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Aimdi prompt tools — first-class entry points above the generator prompt.
+  Widget _buildAimdiPromptTools(BuildContext context, bool mobile, VisionTokens t) {
+    final style = TextStyle(
+      color: t.accent,
+      fontSize: t.fontSize(mobile ? 10 : 8),
+      letterSpacing: 1.5,
+      fontWeight: FontWeight.bold,
+    );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          Icon(Icons.auto_awesome_mosaic, size: mobile ? 14 : 12, color: t.accent),
+          const SizedBox(width: 6),
+          TextButton(
+            onPressed: () => NvPromptBridge.openChipComposer(context),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text('CHIP COMPOSER', style: style),
+          ),
+          Text('·', style: TextStyle(color: t.textDisabled, fontSize: t.fontSize(10))),
+          TextButton(
+            onPressed: () => NvPromptBridge.openArtistBrowser(context),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text('ARTIST BROWSER', style: style),
+          ),
+          const Spacer(),
+          Text(
+            'AIMDI',
+            style: TextStyle(
+              color: t.textDisabled,
+              fontSize: t.fontSize(7),
+              letterSpacing: 1.5,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
