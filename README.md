@@ -1,67 +1,56 @@
 # Nv
 
-Offline-first NovelAI prompt composer for Android.
+One NovelAI app for phone and desktop — **generation + offline prompt tools**, not two separate clients.
 
-Compose weighted tags on your phone, copy the prompt, and paste it into the NovelAI PWA. **Nv never calls a NovelAI generation API** — that keeps the workflow ToS-safe.
+Nv unifies:
 
-## Features
+1. **[NAIWeaver](https://github.com/ststoryweaver/NAIWeaver)** (MIT) — full Flutter frontend for NovelAI image/text APIs, gallery, characters, canvas, ML tools, and more  
+2. **Aimdi prompt tools** — chip composer, HuggingFace artist browser, live Danbooru autocomplete enrichment
 
-1. **Chip builder** — NovelAI weighting (`{}` / `[]` / `1.5::tag::`), `artist:` prefix on V4+, underscore→space, drag-reorder, one-tap copy + Snackbar, optional open-NovelAI
-2. **Hybrid search** — offline Room FTS over a bundled ~17k artist catalog, merged with live [Danbooru autocomplete](https://danbooru.donmai.us/) (debounced 250 ms, cached, HTTP 429 backoff)
-3. **Artist browser** — on-demand SFW previews from the HuggingFace [novelai-anime-v3-artist-comparison](https://huggingface.co/datasets/deus-ex-machina/novelai-anime-v3-artist-comparison) dataset via Coil (disk-cached by artist name), with optional offline preview packs
-4. **Prompt library** — favorites, FTS, versioned JSON export/import
-5. **Settings** — model target (V3 / V4 / V4.5), online enrichment toggles, conservative NSFW filter (default off)
+Android application id: `com.aimdi.nv`
 
-## Stack
+## What you get
 
-Kotlin, Jetpack Compose, Room (+ FTS4), DataStore, Retrofit + OkHttp, Coil. Dependency graph is a small hand-rolled container (same shape as Hilt modules).
+### From NAIWeaver
+- NovelAI V4.5 image generation (txt2img, img2img, inpaint, vibe transfer, director reference, multi-character)
+- Text generation, characters/wardrobe/photoshoot, cascade scenes
+- Gallery, packs (`.vpack`), wildcards, presets, styles, themes
+- On-device ML (BG remove / upscale / SAM), director tools, EN/JA/ZH
 
-Application id: `com.aimdi.nv`
+### From Aimdi/Nv (Tools hub)
+- **Chip Composer** — reorderable weighted chips (`{}` / `[]` / `w::tag::`, `artist:`), local + live Danbooru suggestions, one-tap copy  
+- **Artist Browser** — offline artist tags with on-demand SFW HuggingFace previews (`novelai-anime-v3-artist-comparison`)
 
-## Install
+## Requirements
 
-Download **[`nv-v0.2.0.apk`](https://github.com/Aimdi/Nv/releases/download/v0.2.0/nv-v0.2.0.apk)** from [Releases](https://github.com/Aimdi/Nv/releases) and sideload it. For updates, add this repository in [Obtainium](https://github.com/ImranR98/Obtainium).
+- NovelAI API key (`pst-…`) for generation features  
+- Flutter SDK ^3.10 (stable)  
+- Android SDK 36+ for Android builds
 
-## Build
+Chip Composer and Artist Browser work offline for composition/browsing; previews/search enrichment need network when enabled.
 
-Needs JDK 17+ and the Android SDK (compile/target 35, min 26).
+## Quick start
 
 ```bash
-echo "sdk.dir=$ANDROID_HOME" > local.properties
-./gradlew assembleDebug
-./gradlew testDebugUnitTest
-./gradlew lintDebug
+flutter pub get
+flutter run                 # connected device / emulator
+flutter build apk --release # Android APK
+flutter test
 ```
 
-Debug APK: `app/build/outputs/apk/debug/app-debug.apk`
+## Configuration
 
-## Weighting engine
+1. Launch Nv  
+2. **Tools → Settings** → paste your NovelAI API key  
+3. Generate on the home screen, or open **Tools → Chip Composer / Artist Browser** for prompt work
 
-`WeightEngine` / `NovelAiPromptRenderer` implement NovelAI’s documented rules:
+## Attribution
 
-| Syntax | Effect |
-| --- | --- |
-| `{tag}` / `{{tag}}` | ×1.05 / ×1.1025 attention |
-| `[tag]` / `[[tag]]` | ÷1.05 per level |
-| `1.5::tag::` | numeric emphasis (negatives on V4.5+) |
-| `artist:name` | V4+ artist style flag |
-| underscores → spaces | default on export |
+- Core client: © NAIWeaver Contributors — MIT (`LICENSE`, `NOTICE`)  
+- Chip composer / HF artist browser integration: Aimdi/Nv  
+- Artist preview samples: Apache-2.0, [deus-ex-machina/novelai-anime-v3-artist-comparison](https://huggingface.co/datasets/deus-ex-machina/novelai-anime-v3-artist-comparison)  
+- Wiki tag descriptions (if enabled): see `Tags/LICENSE-WIKI.txt` (CC-BY-SA-4.0)
 
-## Online vs offline
+## Project docs
 
-| Concern | Behaviour |
-| --- | --- |
-| Generation | Always manual (clipboard → NovelAI) |
-| Tag search | Offline catalog first; Danbooru when “Live Danbooru tag search” is on |
-| Artist images | HuggingFace CDN on demand (cached); optional zip packs for full offline |
-| NSFW | `rating:*` suggestions other than general hidden unless explicitly enabled |
-
-## Preview packs
-
-Optional offline WebP packs can still be built and installed from Settings → Packs. See `tools/build_pack.py`.
-
-## License / attribution
-
-- App code: see repository license
-- Artist list & SFW samples: Apache-2.0, deus-ex-machina/novelai-anime-v3-artist-comparison
-- Danbooru autocomplete: public read API (rate-limit politely)
+Upstream NAIWeaver docs remain useful: `FEATURES.md`, `ARCHITECTURE.md`, `API_DOCUMENTATION.md`, `CONTRIBUTING.md`.

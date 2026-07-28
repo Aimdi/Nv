@@ -1,0 +1,11 @@
+Nv incorporates code from NAIWeaver.
+
+NAIWeaver
+Copyright (c) 2026 NAIWeaver Contributors
+License: MIT (see LICENSE)
+
+Source: https://github.com/ststoryweaver/NAIWeaver
+
+Additional Aimdi/Nv modules (chip composer, artist browser enrichment,
+weight engine helpers) are included in this repository under the same MIT
+license terms unless otherwise noted.

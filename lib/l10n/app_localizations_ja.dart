@@ -1,0 +1,3482 @@
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
+import 'app_localizations.dart';
+
+// ignore_for_file: type=lint
+
+/// The translations for Japanese (`ja`).
+class AppLocalizationsJa extends AppLocalizations {
+  AppLocalizationsJa([String locale = 'ja']) : super(locale);
+
+  @override
+  String get commonCancel => 'キャンセル';
+
+  @override
+  String get commonDelete => '削除';
+
+  @override
+  String get commonSave => '保存';
+
+  @override
+  String get commonClose => '閉じる';
+
+  @override
+  String get commonCreate => '作成';
+
+  @override
+  String get commonRename => '名前変更';
+
+  @override
+  String get commonConfirm => '確認';
+
+  @override
+  String get commonSet => '設定';
+
+  @override
+  String get commonNone => 'なし';
+
+  @override
+  String get commonExport => 'エクスポート';
+
+  @override
+  String get commonOverwrite => '上書き';
+
+  @override
+  String get commonSaveChanges => '変更を保存';
+
+  @override
+  String get mainGallery => 'ギャラリー';
+
+  @override
+  String get mainTools => 'ツール';
+
+  @override
+  String get mainSave => '保存';
+
+  @override
+  String get mainExport => 'エクスポート';
+
+  @override
+  String get mainEdit => '編集';
+
+  @override
+  String get mainEnterPrompt => 'プロンプトを入力';
+
+  @override
+  String get mainHelp => 'ヘルプ';
+
+  @override
+  String get mainAuthError => '認証エラー：API設定を確認してください';
+
+  @override
+  String get mainSettings => '設定';
+
+  @override
+  String mainImportFailed(String error) {
+    return '設定のインポートに失敗しました: $error';
+  }
+
+  @override
+  String get mainSavePreset => 'プリセットを保存';
+
+  @override
+  String get mainPresetName => 'プリセット名';
+
+  @override
+  String get mainAdvancedSettings => '詳細設定';
+
+  @override
+  String get mainExitConfirmation => 'アプリを終了しますか？';
+
+  @override
+  String get settingsApiSettings => 'API設定';
+
+  @override
+  String get settingsGeneralSettings => '一般設定';
+
+  @override
+  String get settingsUiSettings => 'UI設定';
+
+  @override
+  String get settingsExport => 'エクスポート';
+
+  @override
+  String get settingsSecurity => 'セキュリティ';
+
+  @override
+  String get settingsDemoMode => 'デモモード';
+
+  @override
+  String get settingsLinks => 'リンク';
+
+  @override
+  String get settingsLanguage => '言語';
+
+  @override
+  String get settingsApiKeyLabel => 'NovelAI APIキー';
+
+  @override
+  String get settingsApiKeyHint => 'pst-xxxx...';
+
+  @override
+  String get settingsAutoSave => '画像の自動保存';
+
+  @override
+  String get settingsAutoSaveDesc => '生成した画像をすべて自動的に出力フォルダに保存します';
+
+  @override
+  String get settingsSmartStyleImport => 'スマートスタイルインポート';
+
+  @override
+  String get settingsSmartStyleImportDesc =>
+      'インポートしたプロンプトからスタイルタグを除去し、スタイル選択を復元します';
+
+  @override
+  String get settingsCharInsertTarget => '保存キャラをエディタに追加';
+
+  @override
+  String get settingsCharInsertTargetDesc =>
+      'プロンプト欄で保存キャラを選ぶと、メインプロンプトにタグを挿入せず、キャラクターカードを追加します';
+
+  @override
+  String get settingsRememberSession => 'セッション記憶';
+
+  @override
+  String get settingsRememberSessionDesc => 'クラッシュ復旧のためにプロンプト、設定、参照を自動保存します';
+
+  @override
+  String get settingsImg2ImgImportPrompt => 'Img2Imgプロンプトインポート';
+
+  @override
+  String get settingsImg2ImgImportPromptDesc =>
+      'メタデータ付きソース画像選択時にimg2imgプロンプトを自動入力';
+
+  @override
+  String get settingsSaveToAlbum => 'アルバムに保存';
+
+  @override
+  String get settingsSaveToAlbumDesc => '新しい生成画像を自動的にこのアルバムに追加します';
+
+  @override
+  String get settingsEditButton => '編集ボタン';
+
+  @override
+  String get settingsEditButtonDesc => '画像ビューアに編集/インペインティングボタンを表示します';
+
+  @override
+  String get settingsDirectorRefShelf => 'ディレクターリファレンスシェルフ';
+
+  @override
+  String get settingsDirectorRefShelfDesc => 'メイン画面にリファレンス画像シェルフを表示します';
+
+  @override
+  String get settingsVibeTransferShelf => 'バイブトランスファーシェルフ';
+
+  @override
+  String get settingsVibeTransferShelfDesc => 'メイン画面にバイブトランスファーシェルフを表示します';
+
+  @override
+  String get settingsCharEditorMode => 'キャラクターエディターモード';
+
+  @override
+  String get settingsCharEditorModeDesc =>
+      'コンパクトシェルフの代わりに設定パネル内に展開キャラクターエディターを使用';
+
+  @override
+  String get settingsThemeBuilder => 'テーマビルダー';
+
+  @override
+  String get settingsStripMetadata => 'エクスポート時にメタデータを除去';
+
+  @override
+  String get settingsStripMetadataDesc => 'エクスポートする画像から生成データ（プロンプト、設定）を除去します';
+
+  @override
+  String get settingsPinLock => 'PINロック';
+
+  @override
+  String get settingsPinLockDesc => 'アプリを開くのにPIN（4〜8桁）を要求します';
+
+  @override
+  String get settingsLockOnResume => '復帰時にロック';
+
+  @override
+  String get settingsLockOnResumeDesc => 'バックグラウンドから復帰時にアプリを再ロックします';
+
+  @override
+  String get settingsBiometricUnlock => '生体認証ロック解除';
+
+  @override
+  String get settingsBiometricUnlockDesc => '指紋または顔認証でロック解除します';
+
+  @override
+  String get settingsBiometricsUnavailable => 'このデバイスでは生体認証を利用できません';
+
+  @override
+  String get settingsSetPin => 'PINを設定';
+
+  @override
+  String get settingsPinDigitsHint => '4〜8桁';
+
+  @override
+  String get settingsPinMustBeDigits => 'PINは4〜8桁の数字で入力してください';
+
+  @override
+  String get settingsPinsDoNotMatch => 'PINが一致しません';
+
+  @override
+  String get settingsEnterCurrentPin => '現在のPINを入力';
+
+  @override
+  String get settingsEnterPinHint => 'PINを入力';
+
+  @override
+  String get settingsIncorrectPin => 'PINが正しくありません';
+
+  @override
+  String get settingsDemoModeDesc => 'ギャラリーにデモ用の安全な画像のみ表示します';
+
+  @override
+  String get settingsSelectDemoImages => 'デモ画像を選択';
+
+  @override
+  String get settingsTagSuggestionsHidden => 'デモモード中はタグ候補が非表示になります';
+
+  @override
+  String get settingsPositivePrefix => 'ポジティブプレフィックス';
+
+  @override
+  String get settingsNegativePrefix => 'ネガティブプレフィックス';
+
+  @override
+  String get settingsEditPositivePrefix => 'ポジティブプレフィックスを編集';
+
+  @override
+  String get settingsEditNegativePrefix => 'ネガティブプレフィックスを編集';
+
+  @override
+  String get settingsDemoPrefixes => 'デモプレフィックス';
+
+  @override
+  String get settingsNotSet => '（未設定）';
+
+  @override
+  String get settingsGithubRepository => 'GitHubリポジトリ';
+
+  @override
+  String get settingsGithubPlaceholder => 'GitHubリンクプレースホルダ';
+
+  @override
+  String get galleryTitle => 'ギャラリー';
+
+  @override
+  String get galleryDemoTitle => 'ギャラリー（デモ）';
+
+  @override
+  String get gallerySearchTags => 'タグを検索...';
+
+  @override
+  String gallerySelectedCount(int count) {
+    return '$count件選択中';
+  }
+
+  @override
+  String get galleryDeselectAll => 'すべて選択解除';
+
+  @override
+  String get gallerySelectAll => 'すべて選択';
+
+  @override
+  String get galleryFavoritesFilter => 'お気に入りフィルター';
+
+  @override
+  String get gallerySort => '並び替え';
+
+  @override
+  String get gallerySelectMode => '選択モード';
+
+  @override
+  String galleryColumnsCount(int count) {
+    return '$count列';
+  }
+
+  @override
+  String get gallerySortDateNewest => '日付（新しい順）';
+
+  @override
+  String get gallerySortDateOldest => '日付（古い順）';
+
+  @override
+  String get gallerySortNameAZ => '名前（A→Z）';
+
+  @override
+  String get gallerySortNameZA => '名前（Z→A）';
+
+  @override
+  String get gallerySortSizeLargest => 'サイズ（大きい順）';
+
+  @override
+  String get gallerySortSizeSmallest => 'サイズ（小さい順）';
+
+  @override
+  String get galleryNoDemoImages => 'デモ画像が選択されていません';
+
+  @override
+  String get galleryNoFavorites => 'お気に入りなし';
+
+  @override
+  String get galleryNoImagesInAlbum => 'アルバムに画像がありません';
+
+  @override
+  String get galleryNoImagesFound => '画像が見つかりません';
+
+  @override
+  String get galleryAll => 'すべて';
+
+  @override
+  String galleryCopiedCount(int count) {
+    return '$count件コピー済み';
+  }
+
+  @override
+  String galleryImagesCopiedCount(int count) {
+    return '$count枚の画像をコピー済み';
+  }
+
+  @override
+  String galleryPasteInto(String name) {
+    return '$nameに貼り付け';
+  }
+
+  @override
+  String galleryPastedIntoAlbum(int count, String name) {
+    return '$count枚の画像を$nameに貼り付けました';
+  }
+
+  @override
+  String get galleryClearClipboard => 'クリップボードをクリア';
+
+  @override
+  String get galleryNewAlbum => '新規アルバム';
+
+  @override
+  String get galleryAlbumName => 'アルバム名';
+
+  @override
+  String get galleryRenameAlbum => 'アルバム名を変更';
+
+  @override
+  String get galleryAddToAlbum => 'アルバムに追加';
+
+  @override
+  String galleryDeleteCount(int count) {
+    return '$count枚の画像を削除しますか？';
+  }
+
+  @override
+  String get galleryCannotUndo => 'この操作は取り消せません。';
+
+  @override
+  String get galleryCompare => '比較';
+
+  @override
+  String get galleryCopy => 'コピー';
+
+  @override
+  String get galleryShare => '共有';
+
+  @override
+  String get galleryPaste => '貼り付け';
+
+  @override
+  String get galleryAlbum => 'アルバム';
+
+  @override
+  String get galleryFavorite => 'お気に入り';
+
+  @override
+  String gallerySavedToDeviceCount(int saved, int total) {
+    return '$saved/$total枚をデバイスギャラリーに保存しました';
+  }
+
+  @override
+  String galleryExportDialogTitle(int count) {
+    return '$count枚の画像をエクスポート';
+  }
+
+  @override
+  String galleryExportedToFolder(int count, String folder) {
+    return '$count枚の画像を$folderにエクスポートしました';
+  }
+
+  @override
+  String galleryExportFailed(String error) {
+    return 'エクスポートに失敗しました: $error';
+  }
+
+  @override
+  String galleryImagesCopied(int count) {
+    return '$count枚の画像をコピーしました';
+  }
+
+  @override
+  String galleryImagesPasted(int count) {
+    return '$count枚の画像を貼り付けました';
+  }
+
+  @override
+  String get galleryDeleteImage => '画像を削除しますか？';
+
+  @override
+  String get gallerySavedToDevice => 'デバイスギャラリーに保存しました';
+
+  @override
+  String get galleryExportImageDialog => '画像をエクスポート';
+
+  @override
+  String gallerySavedTo(String name) {
+    return '$nameに保存しました';
+  }
+
+  @override
+  String get galleryToggleFavorite => 'お気に入りを切り替え';
+
+  @override
+  String get galleryExportImage => '画像をエクスポート';
+
+  @override
+  String get galleryDeleteImageTooltip => '画像を削除';
+
+  @override
+  String get galleryNoPrompt => 'プロンプトなし';
+
+  @override
+  String get galleryNoMetadata => 'メタデータなし';
+
+  @override
+  String get galleryPrompt => 'プロンプト';
+
+  @override
+  String get galleryImg2img => 'IMG2IMG';
+
+  @override
+  String get galleryCharRef => 'キャラ参照';
+
+  @override
+  String get galleryVibe => 'バイブ';
+
+  @override
+  String get gallerySlideshow => 'スライドショー';
+
+  @override
+  String get galleryAddedAsCharRef => 'キャラクター参照として追加しました';
+
+  @override
+  String get galleryAddedAsVibe => 'バイブトランスファーとして追加しました';
+
+  @override
+  String galleryVibeTransferFailed(String error) {
+    return 'バイブトランスファーに失敗しました: $error';
+  }
+
+  @override
+  String get galleryScale => 'スケール';
+
+  @override
+  String get gallerySteps => 'ステップ';
+
+  @override
+  String get gallerySampler => 'サンプラー';
+
+  @override
+  String get gallerySeed => 'シード';
+
+  @override
+  String get galleryResolution => '解像度';
+
+  @override
+  String get galleryEnhance => 'エンハンス';
+
+  @override
+  String get galleryDirectorTools => 'ディレクター';
+
+  @override
+  String get galleryImport => '画像をインポート';
+
+  @override
+  String get galleryImporting => 'インポート中...';
+
+  @override
+  String galleryImportProgress(int current, int total) {
+    return 'インポート中 $current/$total...';
+  }
+
+  @override
+  String get galleryImportPreparing => '準備中...';
+
+  @override
+  String galleryImportSuccess(int count, int metadata) {
+    return '$count枚の画像をインポートしました（$metadata枚にNovelAIメタデータあり）';
+  }
+
+  @override
+  String galleryImportConverted(int count, int converted) {
+    return '$count枚の画像をインポートしました（$converted枚をPNGに変換）';
+  }
+
+  @override
+  String galleryImportFailed(String error) {
+    return 'インポートに失敗しました: $error';
+  }
+
+  @override
+  String get panelAdvancedSettings => '詳細設定';
+
+  @override
+  String get panelDimensions => '解像度';
+
+  @override
+  String get panelSeed => 'シード';
+
+  @override
+  String get panelCustom => 'カスタム';
+
+  @override
+  String get panelSteps => 'ステップ';
+
+  @override
+  String get panelScale => 'スケール';
+
+  @override
+  String get panelSampler => 'サンプラー';
+
+  @override
+  String get panelPostProcessing => '後処理';
+
+  @override
+  String get panelStyles => 'スタイル';
+
+  @override
+  String get panelManageStyles => 'スタイル管理';
+
+  @override
+  String get panelEnabled => '有効';
+
+  @override
+  String get panelNoStylesDefined => 'スタイル未定義';
+
+  @override
+  String get panelNegativePrompt => 'ネガティブプロンプト';
+
+  @override
+  String get panelPresets => 'プリセット';
+
+  @override
+  String get panelNoPresetsSaved => '保存済みプリセットなし';
+
+  @override
+  String get panelDeletePreset => 'プリセットを削除';
+
+  @override
+  String panelDeletePresetConfirm(String name) {
+    return '「$name」を削除しますか？';
+  }
+
+  @override
+  String get panelSaveToAlbum => 'アルバムに保存';
+
+  @override
+  String get panelNew => '新規';
+
+  @override
+  String get panelNewAlbum => '新規アルバム';
+
+  @override
+  String get panelAlbumName => 'アルバム名';
+
+  @override
+  String get resNormalPortrait => '通常 縦長';
+
+  @override
+  String get resNormalLandscape => '通常 横長';
+
+  @override
+  String get resNormalSquare => '通常 正方形';
+
+  @override
+  String get resLargePortrait => '大 縦長';
+
+  @override
+  String get resLargeLandscape => '大 横長';
+
+  @override
+  String get resLargeSquare => '大 正方形';
+
+  @override
+  String get resWallpaperPortrait => '壁紙 縦長';
+
+  @override
+  String get resWallpaperLandscape => '壁紙 横長';
+
+  @override
+  String get toolsHub => 'ツールハブ';
+
+  @override
+  String get toolsTitle => 'ツール';
+
+  @override
+  String get toolsWildcards => 'ワイルドカード';
+
+  @override
+  String get toolsTagLibrary => 'タグライブラリ';
+
+  @override
+  String get toolsPresets => 'プリセット';
+
+  @override
+  String get toolsStyles => 'スタイル';
+
+  @override
+  String get toolsReferences => 'リファレンス';
+
+  @override
+  String get toolsCascadeEditor => 'カスケードエディタ';
+
+  @override
+  String get toolsImg2imgEditor => 'IMG2IMGエディタ';
+
+  @override
+  String get toolsSlideshow => 'スライドショー';
+
+  @override
+  String get toolsPacks => 'パック';
+
+  @override
+  String get toolsTheme => 'テーマ';
+
+  @override
+  String get toolsSettings => '設定';
+
+  @override
+  String get helpTitle => 'NAIWeaver';
+
+  @override
+  String get helpShortcuts => 'ショートカット';
+
+  @override
+  String get helpFeatures => '機能';
+
+  @override
+  String get helpShortcutWildcard => 'wildcards/name.txtからランダムに1行選択';
+
+  @override
+  String get helpShortcutWildcardBrowse => 'ワイルドカードファイルを参照して挿入';
+
+  @override
+  String get helpShortcutHoldDismiss => 'タグ候補を閉じる';
+
+  @override
+  String get helpShortcutFavorites => 'すべてのお気に入りタグを表示';
+
+  @override
+  String get helpShortcutFavCategories => 'カテゴリ別お気に入り';
+
+  @override
+  String get helpShortcutArtistPrefix => 'タグ候補をアーティストに絞り込む';
+
+  @override
+  String get helpShortcutSourceAction => 'アクションを実行するキャラクター';
+
+  @override
+  String get helpShortcutTargetAction => 'アクションを受けるキャラクター';
+
+  @override
+  String get helpShortcutMutualAction => 'キャラクター間の共有アクション';
+
+  @override
+  String get helpShortcutEnter => '生成（またはタグ候補を選択）';
+
+  @override
+  String get helpShortcutDragDrop => '生成設定をインポート';
+
+  @override
+  String get helpFeatureGallery => 'ギャラリー';
+
+  @override
+  String get helpFeatureGalleryDesc => '出力の閲覧、お気に入り、比較、アルバム整理';
+
+  @override
+  String get helpFeatureWildcards => 'ワイルドカード';
+
+  @override
+  String get helpFeatureWildcardsDesc => '__パターン__ テキストファイルからランダム置換';
+
+  @override
+  String get helpFeatureStyles => 'スタイル';
+
+  @override
+  String get helpFeatureStylesDesc => 'プロンプトにプレフィックス/サフィックス/ネガティブを自動挿入';
+
+  @override
+  String get helpFeaturePresets => 'プリセット';
+
+  @override
+  String get helpFeaturePresetsDesc => '生成設定の保存と復元';
+
+  @override
+  String get helpFeatureDirectorRef => 'ディレクターリファレンス';
+
+  @override
+  String get helpFeatureDirectorRefDesc => '参照画像でキャラクター/スタイルの外見をガイド';
+
+  @override
+  String get helpFeatureVibeTransfer => 'バイブトランスファー';
+
+  @override
+  String get helpFeatureVibeTransferDesc => '参照画像で構図とムードに影響を与える';
+
+  @override
+  String get helpFeatureCascade => 'カスケード';
+
+  @override
+  String get helpFeatureCascadeDesc => 'マルチビート連続シーン生成';
+
+  @override
+  String get helpFeatureImg2img => 'IMG2IMG';
+
+  @override
+  String get helpFeatureImg2imgDesc => 'インペインティングとバリエーションで画像を編集/改良';
+
+  @override
+  String get helpFeatureThemes => 'テーマ';
+
+  @override
+  String get helpFeatureThemesDesc => 'すべての色、フォント、スケールをカスタマイズ';
+
+  @override
+  String get helpFeaturePacks => 'パック';
+
+  @override
+  String get helpFeaturePacksDesc => 'プリセット、スタイル、ワイルドカードを.vpackでエクスポート/インポート';
+
+  @override
+  String get wildcardManager => 'ワイルドカードマネージャー';
+
+  @override
+  String get wildcardManageDesc => 'ワイルドカードファイルの管理と編集';
+
+  @override
+  String get wildcardFiles => 'ファイル';
+
+  @override
+  String get wildcardNew => '新規ワイルドカード';
+
+  @override
+  String get wildcardSelectOrCreate => 'ワイルドカードファイルを選択または作成';
+
+  @override
+  String get wildcardValidateTags => 'タグを検証';
+
+  @override
+  String wildcardRecognized(int valid, int total) {
+    return '$valid/$total件認識';
+  }
+
+  @override
+  String get wildcardClear => 'クリア';
+
+  @override
+  String get wildcardStartTyping => 'タグを入力...';
+
+  @override
+  String wildcardUnrecognized(int count) {
+    return '$count件未認識';
+  }
+
+  @override
+  String get wildcardCreateTitle => 'ワイルドカードを作成';
+
+  @override
+  String get wildcardFileName => 'ファイル名';
+
+  @override
+  String get wildcardHelp => 'ワイルドカードヘルプ';
+
+  @override
+  String get wildcardHelpTitle => 'ワイルドカードヘルプ';
+
+  @override
+  String get wildcardHelpRandom => '__name__ はそのワイルドカードファイルからランダムに1行選択します';
+
+  @override
+  String get wildcardHelpDotSyntax => 'ドットで複数単語の名前を作成';
+
+  @override
+  String get wildcardHelpBrowse => '__ と入力してオートコンプリートからワイルドカードを参照・挿入';
+
+  @override
+  String get wildcardHelpNesting => 'ネスト';
+
+  @override
+  String get wildcardHelpNestingDesc => 'ワイルドカードは他のワイルドカードを参照できます（最大5階層）';
+
+  @override
+  String get wildcardHelpTip => 'ドラッグでファイルを並び替え — この順序がオートコンプリートに反映されます';
+
+  @override
+  String get wildcardMode => 'モード';
+
+  @override
+  String get wildcardModeRandom => 'ランダム';
+
+  @override
+  String get wildcardModeRandomDesc => 'ワイルドカード使用時にランダムで1行選択します';
+
+  @override
+  String get wildcardModeSequential => 'シーケンシャル';
+
+  @override
+  String get wildcardModeSequentialDesc => '行を順番に巡回し、最後まで行くと最初に戻ります';
+
+  @override
+  String get wildcardModeShuffle => 'シャッフル';
+
+  @override
+  String get wildcardModeShuffleDesc => '全行をランダムに並び替え、重複なく順に巡回します';
+
+  @override
+  String get wildcardModeWeighted => 'ウェイト';
+
+  @override
+  String get wildcardModeWeightedDesc => 'ウェイト構文（例: 10::option）で選択確率を調整します';
+
+  @override
+  String get wildcardHelpFavorites => 'お気に入りのワイルドカードはタグ補完でゴールドの枠線で表示されます';
+
+  @override
+  String get wildcardDeleteTitle => 'ワイルドカードを削除';
+
+  @override
+  String wildcardDeleteConfirm(String name) {
+    return '\'\'$name\'\' を削除してもよろしいですか？';
+  }
+
+  @override
+  String get wildcardRenameTitle => 'ワイルドカードの名前変更';
+
+  @override
+  String get wildcardRenameExists => 'この名前のワイルドカードは既に存在します';
+
+  @override
+  String get tagLibTitle => 'タグライブラリ';
+
+  @override
+  String get tagLibPreviewSettings => 'プレビュー設定';
+
+  @override
+  String get tagLibAddTag => 'タグを追加';
+
+  @override
+  String get tagLibSearchTags => 'タグを検索...';
+
+  @override
+  String get tagLibAll => 'すべて';
+
+  @override
+  String get tagLibFavorites => 'お気に入り';
+
+  @override
+  String get tagLibImages => '画像付き';
+
+  @override
+  String get tagLibSort => '並び順:';
+
+  @override
+  String get tagLibSortCountDesc => '件数 ↓';
+
+  @override
+  String get tagLibSortCountAsc => '件数 ↑';
+
+  @override
+  String get tagLibSortAZ => 'A-Z';
+
+  @override
+  String get tagLibSortZA => 'Z-A';
+
+  @override
+  String get tagLibSortFavsFirst => 'お気に入り優先';
+
+  @override
+  String tagLibTagCount(int count) {
+    return '$count件のタグ';
+  }
+
+  @override
+  String get tagLibDeleteTag => 'タグを削除';
+
+  @override
+  String tagLibRemoveConfirm(String tag) {
+    return '「$tag」をライブラリから削除しますか？';
+  }
+
+  @override
+  String get tagLibTestTag => 'タグをテスト';
+
+  @override
+  String get tagLibAddNewTag => '新規タグを追加';
+
+  @override
+  String get tagLibTagName => 'タグ名';
+
+  @override
+  String get tagLibCount => '件数';
+
+  @override
+  String get tagLibAddTagBtn => 'タグを追加';
+
+  @override
+  String get tagLibDeleteExample => 'サンプルを削除';
+
+  @override
+  String get tagLibDeleteExampleConfirm => 'このビジュアルサンプルを削除しますか？';
+
+  @override
+  String tagLibTesting(String tag) {
+    return 'テスト中: $tag';
+  }
+
+  @override
+  String get tagLibGeneratingPreview => 'プレビューを生成中...';
+
+  @override
+  String get tagLibGenerationFailed => '生成に失敗しました';
+
+  @override
+  String get tagLibExampleSaved => 'サンプルを保存しました';
+
+  @override
+  String get tagLibSaveAsExample => 'サンプルとして保存';
+
+  @override
+  String get tagLibPreviewSettingsTitle => 'プレビュー設定';
+
+  @override
+  String get tagLibPositivePromptBase => 'ポジティブプロンプト（ベース）';
+
+  @override
+  String get tagLibNegativePrompt => 'ネガティブプロンプト';
+
+  @override
+  String get tagLibSampler => 'サンプラー';
+
+  @override
+  String get tagLibSteps => 'ステップ';
+
+  @override
+  String get tagLibWidth => '幅';
+
+  @override
+  String get tagLibHeight => '高さ';
+
+  @override
+  String get tagLibScale => 'スケール';
+
+  @override
+  String get tagLibSeed => 'シード';
+
+  @override
+  String get tagLibRandom => 'ランダム';
+
+  @override
+  String get presetManager => 'プリセットマネージャー';
+
+  @override
+  String get presetManageDesc => '生成プリセットの管理と編集';
+
+  @override
+  String get presetList => 'プリセット';
+
+  @override
+  String get presetNew => '新規プリセット';
+
+  @override
+  String presetCharsInfo(int chars, int ints) {
+    return '$charsキャラ, $intsインタラクション';
+  }
+
+  @override
+  String presetCharsRefsInfo(int chars, int ints, int refs) {
+    return '$charsキャラ, $intsインタラクション, $refsリファレンス';
+  }
+
+  @override
+  String get presetSelectToEdit => '編集するプリセットを選択';
+
+  @override
+  String get presetIdentity => '基本情報';
+
+  @override
+  String get presetName => '名前';
+
+  @override
+  String get presetPrompts => 'プロンプト';
+
+  @override
+  String get presetPrompt => 'プロンプト';
+
+  @override
+  String get presetNegativePrompt => 'ネガティブプロンプト';
+
+  @override
+  String get presetGenSettings => '生成設定';
+
+  @override
+  String get presetWidth => '幅';
+
+  @override
+  String get presetHeight => '高さ';
+
+  @override
+  String get presetScale => 'スケール';
+
+  @override
+  String get presetSteps => 'ステップ';
+
+  @override
+  String get presetSampler => 'サンプラー';
+
+  @override
+  String get presetCharsAndInteractions => 'キャラクター＆インタラクション';
+
+  @override
+  String get presetNoChars => 'このプリセットにキャラクターは保存されていません';
+
+  @override
+  String presetCharacterN(int n) {
+    return 'キャラクター $n';
+  }
+
+  @override
+  String get presetInteractions => 'インタラクション';
+
+  @override
+  String get presetReferences => 'リファレンス';
+
+  @override
+  String get presetNoRefs => 'このプリセットにリファレンスは保存されていません';
+
+  @override
+  String get presetProcessing => '処理中...';
+
+  @override
+  String get presetAddReference => 'リファレンスを追加';
+
+  @override
+  String get presetDeleteTitle => 'プリセットを削除';
+
+  @override
+  String presetDeleteConfirm(String name) {
+    return '「$name」を削除してもよろしいですか？';
+  }
+
+  @override
+  String get presetOverwriteTitle => 'プリセットを上書き';
+
+  @override
+  String presetOverwriteConfirm(String name) {
+    return '「$name」という名前のプリセットが既に存在します。上書きしますか？';
+  }
+
+  @override
+  String get styleEditor => 'スタイルエディタ';
+
+  @override
+  String get styleManageDesc => 'プロンプトスニペットとスタイルタグの管理';
+
+  @override
+  String get styleList => 'スタイル';
+
+  @override
+  String get styleNew => '新規スタイル';
+
+  @override
+  String get styleResetDefaults => 'スタイルをデフォルトにリセット';
+
+  @override
+  String get styleSelectToEdit => '編集するスタイルを選択';
+
+  @override
+  String get styleIdentity => '基本情報';
+
+  @override
+  String get styleName => '名前';
+
+  @override
+  String get styleDefaultOnLaunch => '起動時にデフォルト';
+
+  @override
+  String get styleTargetPrompt => '対象プロンプト';
+
+  @override
+  String get stylePositive => 'ポジティブ';
+
+  @override
+  String get styleNegative => 'ネガティブ';
+
+  @override
+  String get styleNegativeContent => 'ネガティブコンテンツ';
+
+  @override
+  String get stylePositiveContent => 'ポジティブコンテンツ';
+
+  @override
+  String get styleContent => 'コンテンツ';
+
+  @override
+  String get stylePlacement => '配置';
+
+  @override
+  String get styleBeginningPrefix => '先頭（プレフィックス）';
+
+  @override
+  String get styleEndSuffix => '末尾（サフィックス）';
+
+  @override
+  String get styleDeleteTitle => 'スタイルを削除';
+
+  @override
+  String styleDeleteConfirm(String name) {
+    return '「$name」を削除してもよろしいですか？';
+  }
+
+  @override
+  String get styleOverwriteTitle => 'スタイルを上書き';
+
+  @override
+  String styleOverwriteConfirm(String name) {
+    return '「$name」という名前のスタイルが既に存在します。上書きしますか？';
+  }
+
+  @override
+  String get refPreciseReferences => 'プリサイスリファレンス';
+
+  @override
+  String get refVibeTransfer => 'バイブトランスファー';
+
+  @override
+  String get refDialogCancel => 'キャンセル';
+
+  @override
+  String get refDialogSave => '保存';
+
+  @override
+  String get refNameHint => '名前';
+
+  @override
+  String get refClearAll => 'すべてクリア';
+
+  @override
+  String get refSavedSection => '保存済み';
+
+  @override
+  String get refSaveReference => 'リファレンスを保存';
+
+  @override
+  String refReferenceCount(int count) {
+    return '$count件のリファレンス';
+  }
+
+  @override
+  String get refNoReferencesAdded => 'リファレンスなし';
+
+  @override
+  String get refEmptyDescription =>
+      'リファレンス画像をアップロードして、キャラクターの\n外見やアートスタイルを維持しましょう。';
+
+  @override
+  String get refAddReference => 'リファレンスを追加';
+
+  @override
+  String get refEditorTitle => 'リファレンスエディタ';
+
+  @override
+  String get refTypeLabel => 'リファレンスタイプ';
+
+  @override
+  String get refStrength => '強度';
+
+  @override
+  String get refFidelity => '忠実度';
+
+  @override
+  String get refStrengthShort => 'STR';
+
+  @override
+  String get refFidelityShort => 'FID';
+
+  @override
+  String get refTypeCharacter => 'キャラクター';
+
+  @override
+  String get refTypeStyle => 'スタイル';
+
+  @override
+  String get refTypeCharAndStyle => 'キャラ&スタイル';
+
+  @override
+  String get refSaveVibe => 'バイブを保存';
+
+  @override
+  String get refVibeTransfers => 'バイブトランスファー';
+
+  @override
+  String refVibeCount(int count) {
+    return '$count件のバイブ';
+  }
+
+  @override
+  String get refNoVibesAdded => 'バイブなし';
+
+  @override
+  String get refVibeEmptyDescription =>
+      'リファレンス画像をアップロードして、アートスタイルと\n雰囲気を生成に反映させましょう。';
+
+  @override
+  String get refAddVibe => 'バイブを追加';
+
+  @override
+  String get refVibeLabel => 'バイブ';
+
+  @override
+  String get refVibeEditorTitle => 'バイブエディタ';
+
+  @override
+  String get refInfoExtracted => '情報抽出量';
+
+  @override
+  String get refInfoExtractedShort => 'INF';
+
+  @override
+  String get refApiKeyMissing => 'APIキーが未設定または無効です';
+
+  @override
+  String refVibeEncodeFailed(String error) {
+    return 'バイブのエンコードに失敗: $error';
+  }
+
+  @override
+  String get refLoadSaved => '保存済みを読込';
+
+  @override
+  String get refPickImage => '画像を選択';
+
+  @override
+  String get refBrowseFiles => 'ファイルを参照';
+
+  @override
+  String get refNoSavedRefs => '保存されたリファレンスがありません';
+
+  @override
+  String get packTitle => 'NAIWEAVERパック';
+
+  @override
+  String get packDesc => 'プリセット、スタイル、ワイルドカードを.vpackファイルとしてエクスポート/インポートします。';
+
+  @override
+  String get packExportLabel => 'パックをエクスポート';
+
+  @override
+  String get packExportDesc => 'プリセット、スタイル、ワイルドカードをバンドル';
+
+  @override
+  String get packImportLabel => 'パックをインポート';
+
+  @override
+  String get packImportDesc => '.vpackファイルを読み込み';
+
+  @override
+  String get packGalleryExport => 'ギャラリーエクスポート';
+
+  @override
+  String get packGalleryExportDesc => 'ギャラリー画像をアルバムフォルダ別にZIPファイルとしてエクスポートします。';
+
+  @override
+  String get packExportGalleryZip => 'ギャラリーをZIPでエクスポート';
+
+  @override
+  String get packExportGalleryZipDesc => 'フォルダ内のアルバム階層を保持';
+
+  @override
+  String get packImportDialogTitle => 'NAIWeaverパックをインポート';
+
+  @override
+  String packFailedRead(String error) {
+    return 'パックの読み込みに失敗しました: $error';
+  }
+
+  @override
+  String get packExportDialogTitle => 'パックをエクスポート';
+
+  @override
+  String get packName => 'パック名';
+
+  @override
+  String get packDescriptionOptional => '説明（任意）';
+
+  @override
+  String packPresetsSection(int selected, int total) {
+    return 'プリセット ($selected/$total)';
+  }
+
+  @override
+  String packStylesSection(int selected, int total) {
+    return 'スタイル ($selected/$total)';
+  }
+
+  @override
+  String packWildcardsSection(int selected, int total) {
+    return 'ワイルドカード ($selected/$total)';
+  }
+
+  @override
+  String packSavedRefsSection(int selected, int total) {
+    return '保存済みリファレンス ($selected/$total)';
+  }
+
+  @override
+  String packSavedVibesSection(int selected, int total) {
+    return '保存済みバイブ ($selected/$total)';
+  }
+
+  @override
+  String packCharacterPresetsSection(int selected, int total) {
+    return 'キャラクタープリセット ($selected/$total)';
+  }
+
+  @override
+  String packThemesSection(int selected, int total) {
+    return 'テーマ ($selected/$total)';
+  }
+
+  @override
+  String packAlbumsSection(int selected, int total) {
+    return 'アルバム ($selected/$total)';
+  }
+
+  @override
+  String get packSettingsSection => 'アプリ・ジュークボックス設定';
+
+  @override
+  String get packSettingsItem => 'アプリ・ジュークボックス設定';
+
+  @override
+  String get packImportRestartHint =>
+      'インポートしました。設定とテーマを完全に適用するにはアプリを再起動してください。';
+
+  @override
+  String get packExportSuccess => 'パックをエクスポートしました';
+
+  @override
+  String packExportFailed(String error) {
+    return 'エクスポートに失敗しました: $error';
+  }
+
+  @override
+  String get packImportDialogTitle2 => 'パックをインポート';
+
+  @override
+  String packImportCount(int count) {
+    return 'インポート ($count)';
+  }
+
+  @override
+  String get packImportSuccess => 'パックをインポートしました';
+
+  @override
+  String packImportFailed(String error) {
+    return 'インポートに失敗しました: $error';
+  }
+
+  @override
+  String get packExportGalleryTitle => 'ギャラリーをエクスポート';
+
+  @override
+  String get packAlbums => 'アルバム';
+
+  @override
+  String packUnsortedCount(int count) {
+    return '未分類 ($count)';
+  }
+
+  @override
+  String get packOptions => 'オプション';
+
+  @override
+  String get packStripMetadata => 'メタデータを除去';
+
+  @override
+  String get packFavoritesOnly => 'お気に入りのみ';
+
+  @override
+  String packExportCount(int count) {
+    return 'エクスポート ($count)';
+  }
+
+  @override
+  String get packSaveDialogTitle => 'NAIWeaverパックを保存';
+
+  @override
+  String get packExportGalleryZipDialog => 'ギャラリーZIPをエクスポート';
+
+  @override
+  String packExportedToZip(int count) {
+    return '$count枚の画像をZIPにエクスポートしました';
+  }
+
+  @override
+  String get themeSelectToEdit => '編集するテーマを選択';
+
+  @override
+  String get themeList => 'テーマ';
+
+  @override
+  String get themeNew => '新規テーマ';
+
+  @override
+  String get themeSave => '保存';
+
+  @override
+  String get themeReset => 'リセット';
+
+  @override
+  String get themePreview => 'プレビュー';
+
+  @override
+  String get themeColors => 'カラー';
+
+  @override
+  String get themeColorBackground => '背景';
+
+  @override
+  String get themeColorSurfaceHigh => 'サーフェス（高）';
+
+  @override
+  String get themeColorSurfaceMid => 'サーフェス（中）';
+
+  @override
+  String get themeColorTextPrimary => 'テキスト（プライマリ）';
+
+  @override
+  String get themeColorTextSecondary => 'テキスト（セカンダリ）';
+
+  @override
+  String get themeColorTextTertiary => 'テキスト（ターシャリ）';
+
+  @override
+  String get themeColorTextDisabled => 'テキスト（無効）';
+
+  @override
+  String get themeColorTextMinimal => 'テキスト（最小）';
+
+  @override
+  String get themeColorBorderStrong => 'ボーダー（強）';
+
+  @override
+  String get themeColorBorderMedium => 'ボーダー（中）';
+
+  @override
+  String get themeColorBorderSubtle => 'ボーダー（微）';
+
+  @override
+  String get themeColorAccent => 'アクセント';
+
+  @override
+  String get themeColorAccentEdit => 'アクセント（編集）';
+
+  @override
+  String get themeColorAccentSuccess => 'アクセント（成功）';
+
+  @override
+  String get themeColorAccentDanger => 'アクセント（危険）';
+
+  @override
+  String get themeColorLogo => 'ロゴ';
+
+  @override
+  String get themeColorCascade => 'カスケード';
+
+  @override
+  String get themeReferences => 'リファレンス';
+
+  @override
+  String get themeColorVibeTransfer => 'バイブトランスファー';
+
+  @override
+  String get themeColorRefCharacter => 'リファレンス（キャラクター）';
+
+  @override
+  String get themeColorRefStyle => 'リファレンス（スタイル）';
+
+  @override
+  String get themeColorRefCharStyle => 'リファレンス（キャラ+スタイル）';
+
+  @override
+  String get themeColorFavorite => 'お気に入り';
+
+  @override
+  String get themeColorCharacter => 'キャラクター';
+
+  @override
+  String get themeColorPositive => 'ポジティブ';
+
+  @override
+  String get themeColorNegative => 'ネガティブ';
+
+  @override
+  String get themeFont => 'フォント';
+
+  @override
+  String get themeTextScale => 'テキストスケール';
+
+  @override
+  String get themeHeaderScale => 'ヘッダースケール';
+
+  @override
+  String get themeTitleScale => 'タイトルスケール';
+
+  @override
+  String get themeButtonScale => 'ボタンスケール';
+
+  @override
+  String get themeSmall => '小';
+
+  @override
+  String get themeLarge => '大';
+
+  @override
+  String get themePromptInput => 'プロンプト入力';
+
+  @override
+  String get themeFontSize => 'フォントサイズ';
+
+  @override
+  String get themeHeightLabel => '高さ';
+
+  @override
+  String themeLines(int count) {
+    return '$count行';
+  }
+
+  @override
+  String get themeBrightMode => 'ブライトモード';
+
+  @override
+  String get themeBrightText => '明るいテキスト';
+
+  @override
+  String get themeBrightDesc => 'テキストの色を明るくして可読性を向上';
+
+  @override
+  String get themePanelLayout => 'パネルレイアウト';
+
+  @override
+  String get themePanelLayoutDesc => 'ドラッグして詳細設定セクションを並び替え';
+
+  @override
+  String get themeDeleteTitle => 'テーマを削除';
+
+  @override
+  String themeDeleteConfirm(String name) {
+    return '本当に \'\'$name\'\' を削除しますか？';
+  }
+
+  @override
+  String get themeNewTitle => '新規テーマ';
+
+  @override
+  String get themeCustomTheme => 'カスタムテーマ';
+
+  @override
+  String get themeThemeName => 'テーマ名';
+
+  @override
+  String themeCreateFailed(String error) {
+    return 'テーマの作成に失敗しました: $error';
+  }
+
+  @override
+  String get themeSectionDimSeed => '解像度＋シード';
+
+  @override
+  String get themeSectionStepsScale => 'ステップ＋スケール';
+
+  @override
+  String get themeSectionSamplerPost => 'サンプラー＋後処理';
+
+  @override
+  String get themeSectionStyles => 'スタイル';
+
+  @override
+  String get themeSectionNegPrompt => 'ネガティブプロンプト';
+
+  @override
+  String get themeSectionPresets => 'プリセット';
+
+  @override
+  String get themeSectionSaveAlbum => 'アルバムに保存';
+
+  @override
+  String get themePreviewHeader => 'ヘッダーテキスト';
+
+  @override
+  String get themePreviewSecondary => 'セカンダリテキスト';
+
+  @override
+  String get themePreviewHint => 'ヒント / ターシャリテキスト';
+
+  @override
+  String get themePreviewGenerate => '生成';
+
+  @override
+  String get themePreviewEdit => '編集';
+
+  @override
+  String get cascadeEditorLabel => 'カスケードエディタ';
+
+  @override
+  String get cascadeSavedToLibrary => 'カスケードをライブラリに保存しました';
+
+  @override
+  String get cascadeNoBeatSelected => 'ビートが選択されていません';
+
+  @override
+  String get cascadeScenePrompt => 'シーン / アクション';
+
+  @override
+  String get cascadeSceneSubLabel => '何が起きているか + 構図';
+
+  @override
+  String get cascadeSceneHint =>
+      '何が起きているか: 例 2girls, hugging, wide shot, from above';
+
+  @override
+  String get cascadeEnvironmentPrompt => '環境プロンプト';
+
+  @override
+  String get cascadeEnvSubLabel => 'どこで起きているか';
+
+  @override
+  String get cascadeEnvHint => '場所: 例 森、夜、屋内、シネマティックライティング';
+
+  @override
+  String get cascadeApplyToAll => 'すべてに適用';
+
+  @override
+  String get cascadeSceneApplied => 'シーンをすべてのビートに適用しました';
+
+  @override
+  String get cascadeCharacterSlots => 'キャラクタースロット';
+
+  @override
+  String cascadeCharacterSlotN(int n) {
+    return 'キャラクタースロット $n';
+  }
+
+  @override
+  String get cascadePosition => 'ポジション';
+
+  @override
+  String get cascadeAiPosition => 'AIポジション';
+
+  @override
+  String get cascadePositivePrompt => 'ポジティブプロンプト';
+
+  @override
+  String get cascadeCharHint => 'キャラクタータグ、外見、状態...';
+
+  @override
+  String get cascadeNegativePrompt => 'ネガティブプロンプト';
+
+  @override
+  String get cascadeAvoidHint => '除外タグ...';
+
+  @override
+  String get cascadeLinkAction => 'アクションをリンク';
+
+  @override
+  String get cascadeBeatSettings => 'ビート設定';
+
+  @override
+  String get cascadeResolution => '解像度';
+
+  @override
+  String get cascadeSampler => 'サンプラー';
+
+  @override
+  String get cascadeSteps => 'ステップ';
+
+  @override
+  String get cascadeScale => 'スケール';
+
+  @override
+  String get cascadeStyles => 'スタイル';
+
+  @override
+  String get cascadeNoStyles => '利用可能なスタイルがありません';
+
+  @override
+  String get cascadeLibrary => 'カスケードライブラリ';
+
+  @override
+  String cascadeSequencesSaved(int count) {
+    return '$countシーケンス保存済み';
+  }
+
+  @override
+  String get cascadeNew => '新規カスケード';
+
+  @override
+  String get cascadeNoCascades => 'カスケードが見つかりません';
+
+  @override
+  String cascadeBeatsAndSlots(int beats, int slots) {
+    return '$beatsビート・$slotsキャラクタースロット';
+  }
+
+  @override
+  String get cascadeCreateNew => '新規カスケードを作成';
+
+  @override
+  String get cascadeName => 'カスケード名';
+
+  @override
+  String get cascadeCharSlotsLabel => 'キャラクタースロット';
+
+  @override
+  String get cascadeAutoPosition => '自動配置（AIに任せる）';
+
+  @override
+  String get cascadeDeleteTitle => 'カスケードを削除しますか？';
+
+  @override
+  String cascadeDeleteConfirm(String name) {
+    return '「$name」を削除してもよろしいですか？';
+  }
+
+  @override
+  String get cascadeSelect => 'カスケードを選択';
+
+  @override
+  String get cascadeNoSaved => '保存済みカスケードが見つかりません';
+
+  @override
+  String cascadeCharactersAndBeats(int chars, int beats) {
+    return '$charsキャラクター・$beatsビート';
+  }
+
+  @override
+  String cascadeCharTags(int n) {
+    return 'キャラ$nタグ';
+  }
+
+  @override
+  String get cascadeGlobalScene => 'グローバルシーン (全ビート共通のタグ)';
+
+  @override
+  String get cascadeGlobalStyle => 'グローバルスタイル / インジェクション';
+
+  @override
+  String get cascadeCaptionHint => 'このビートのナレーション...（プレビューに表示）';
+
+  @override
+  String get cascadeCaptionToggle => 'キャプションの表示 / 非表示';
+
+  @override
+  String get cascadeExportTooltip => 'キャプション付きでエクスポート';
+
+  @override
+  String get cascadeExportBeat => 'このビートをエクスポート（キャプション焼き込み）';
+
+  @override
+  String get cascadeExportStripVertical => 'ストーリーボード — 縦';
+
+  @override
+  String get cascadeExportStripHorizontal => 'ストーリーボード — 横';
+
+  @override
+  String get cascadeExportSaved => 'エクスポートしました';
+
+  @override
+  String get cascadeExportFailed => 'エクスポートに失敗しました';
+
+  @override
+  String get cascadeStripDownscaled => 'メモリ制限に合わせてストーリーボードを縮小しました';
+
+  @override
+  String cascadeRegenerateBeat(int n) {
+    return 'ビート$nを再生成';
+  }
+
+  @override
+  String cascadeGenerateBeat(int n) {
+    return 'ビート$nを生成';
+  }
+
+  @override
+  String get cascadeSkipToNext => '次へスキップ';
+
+  @override
+  String get cascadeBeatRenderError =>
+      'このビートを作成できませんでした。キャラクターの外見が設定されているか確認してください。';
+
+  @override
+  String get cascadeStartCasting => 'キャスト';
+
+  @override
+  String get cascadeBackToLibrary => 'ライブラリ';
+
+  @override
+  String get cascadeUnsavedTitle => '未保存の変更';
+
+  @override
+  String get cascadeUnsavedMessage => 'このカスケードに未保存の変更があります。破棄しますか？';
+
+  @override
+  String get cascadeDiscard => '破棄';
+
+  @override
+  String get cascadeExitCascade => 'カスケードを終了';
+
+  @override
+  String get img2imgResult => '結果';
+
+  @override
+  String get img2imgSource => 'ソース';
+
+  @override
+  String get img2imgCanvas => 'キャンバス';
+
+  @override
+  String get img2imgUseAsSource => 'ソースとして使用';
+
+  @override
+  String get img2imgInpainting => 'インペインティング';
+
+  @override
+  String get img2imgTitle => 'IMG2IMG';
+
+  @override
+  String get img2imgEditorLabel => 'エディタ';
+
+  @override
+  String get img2imgBackToPicker => 'ピッカーに戻る';
+
+  @override
+  String get img2imgGenerating => '生成中...';
+
+  @override
+  String get img2imgGenerate => '生成';
+
+  @override
+  String img2imgGenerationFailed(String error) {
+    return '生成に失敗しました: $error';
+  }
+
+  @override
+  String get img2imgSettings => 'IMG2IMG設定';
+
+  @override
+  String get img2imgPrompt => 'プロンプト';
+
+  @override
+  String get img2imgPromptHint => '生成する内容を入力...';
+
+  @override
+  String get img2imgNegative => 'ネガティブ';
+
+  @override
+  String get img2imgNegativeHint => '不要な内容...';
+
+  @override
+  String get img2imgStrength => '強度';
+
+  @override
+  String get img2imgNoise => 'ノイズ';
+
+  @override
+  String get img2imgMaskBlur => 'マスクブラー';
+
+  @override
+  String get img2imgColorCorrect => '色補正';
+
+  @override
+  String get img2imgSourceInfo => 'ソース';
+
+  @override
+  String img2imgMaskStrokes(int count) {
+    return 'マスク: $countストローク';
+  }
+
+  @override
+  String get img2imgNoMask => 'マスクなし（全体IMG2IMG）';
+
+  @override
+  String get img2imgImportPrompt => 'プロンプトをインポート';
+
+  @override
+  String get img2imgImportPromptDesc => 'ソース画像のメタデータからプロンプトを自動入力';
+
+  @override
+  String get img2imgUploadFromDevice => 'デバイスからアップロード';
+
+  @override
+  String get img2imgUploadFromDeviceDesc => 'フォトライブラリまたはファイルから画像を選択';
+
+  @override
+  String get img2imgBlankCanvas => '白紙キャンバス';
+
+  @override
+  String get img2imgBlankCanvasDesc => '描画用の白紙画像を作成';
+
+  @override
+  String get img2imgBlankCanvasSize => 'キャンバスサイズ';
+
+  @override
+  String get slideshowTitle => 'スライドショー';
+
+  @override
+  String get slideshowPlayAll => 'すべて再生';
+
+  @override
+  String get slideshowConfigs => '設定一覧';
+
+  @override
+  String get slideshowNewConfig => '新規設定';
+
+  @override
+  String get slideshowNoConfigs => 'スライドショー設定がありません。\n+をタップして作成してください。';
+
+  @override
+  String get slideshowSelectOrCreate => 'スライドショー設定を選択または作成';
+
+  @override
+  String get slideshowNameLabel => '名前';
+
+  @override
+  String get slideshowSourceLabel => 'ソース';
+
+  @override
+  String get slideshowTransition => 'トランジション';
+
+  @override
+  String get slideshowTransitionDuration => 'トランジション時間';
+
+  @override
+  String get slideshowTiming => 'タイミング';
+
+  @override
+  String get slideshowSlideDuration => 'スライド表示時間';
+
+  @override
+  String get slideshowKenBurns => 'ケンバーンズエフェクト';
+
+  @override
+  String get slideshowEnabled => '有効';
+
+  @override
+  String get slideshowIntensity => '強度';
+
+  @override
+  String get slideshowManualZoom => '手動ズーム';
+
+  @override
+  String get slideshowPlayback => '再生';
+
+  @override
+  String get slideshowShuffle => 'シャッフル';
+
+  @override
+  String get slideshowLoop => 'ループ';
+
+  @override
+  String get slideshowDefault => 'デフォルト';
+
+  @override
+  String get slideshowUseAsDefault => 'デフォルトスライドショーとして使用';
+
+  @override
+  String get slideshowPlay => 'スライドショーを再生';
+
+  @override
+  String get slideshowTransFade => 'フェード';
+
+  @override
+  String get slideshowTransSlideL => 'スライド左';
+
+  @override
+  String get slideshowTransSlideR => 'スライド右';
+
+  @override
+  String get slideshowTransSlideUp => 'スライド上';
+
+  @override
+  String get slideshowTransZoom => 'ズーム';
+
+  @override
+  String get slideshowTransXZoom => 'Xズーム';
+
+  @override
+  String get slideshowSourceAllImages => 'すべての画像';
+
+  @override
+  String get slideshowSourceAlbum => 'アルバム';
+
+  @override
+  String get slideshowSourceFavorites => 'お気に入り';
+
+  @override
+  String slideshowSourceCustom(int count) {
+    return '$countカスタム';
+  }
+
+  @override
+  String get slideshowDeleteConfig => '設定を削除';
+
+  @override
+  String slideshowDeleteConfirm(String name) {
+    return '「$name」を削除しますか？';
+  }
+
+  @override
+  String get slideshowImageSource => '画像ソース';
+
+  @override
+  String get slideshowAllImages => 'すべての画像';
+
+  @override
+  String slideshowImageCount(int count) {
+    return '$count枚';
+  }
+
+  @override
+  String get slideshowFavoritesLabel => 'お気に入り';
+
+  @override
+  String get slideshowAlbumLabel => 'アルバム';
+
+  @override
+  String get slideshowCustomSelection => 'カスタム選択';
+
+  @override
+  String slideshowSelectedCount(int count) {
+    return '$count枚選択済み';
+  }
+
+  @override
+  String get slideshowNoAlbums => 'アルバムが作成されていません';
+
+  @override
+  String get slideshowSelectAlbum => 'アルバムを選択';
+
+  @override
+  String slideshowCustomCount(int selected, int total) {
+    return '$selected / $total枚選択済み';
+  }
+
+  @override
+  String get slideshowDeselectAll => 'すべて選択解除';
+
+  @override
+  String get slideshowSelectAll => 'すべて選択';
+
+  @override
+  String get slideshowNoImages => '表示する画像がありません';
+
+  @override
+  String get slideshowGoBack => '戻る';
+
+  @override
+  String demoImagesSelected(int count) {
+    return '$count枚選択済み';
+  }
+
+  @override
+  String get demoAll => 'すべて';
+
+  @override
+  String get demoClear => 'クリア';
+
+  @override
+  String get demoNoImages => 'ギャラリーに画像がありません';
+
+  @override
+  String get cascadeBeatTimeline => 'ビートタイムライン';
+
+  @override
+  String cascadeBeatsCount(int count) {
+    return '$countビート';
+  }
+
+  @override
+  String cascadeBeatN(int n) {
+    return 'ビート $n';
+  }
+
+  @override
+  String get cascadeCloneBeat => 'ビートを複製';
+
+  @override
+  String get cascadeRemoveBeat => 'ビートを削除';
+
+  @override
+  String get settingsCheckForUpdates => 'アップデートを確認';
+
+  @override
+  String get settingsUpdateAvailable => 'アップデートあり';
+
+  @override
+  String settingsUpdateAvailableDesc(String version) {
+    return '新しいバージョン（$version）が利用可能です。';
+  }
+
+  @override
+  String get settingsUpdateDownload => 'ダウンロード';
+
+  @override
+  String get settingsUpToDate => '最新バージョンです！';
+
+  @override
+  String get settingsUpdateCheckFailed => 'アップデートの確認に失敗しました';
+
+  @override
+  String get settingsUpdateDownloading => 'アップデートをダウンロード中…';
+
+  @override
+  String settingsUpdateProgress(String received, String total) {
+    return '$received / $total';
+  }
+
+  @override
+  String get settingsUpdateInstalling => 'インストーラーを起動中…';
+
+  @override
+  String get settingsUpdateRestartPrompt =>
+      'アップデートを適用するためNAIWeaverを終了し、自動的に再起動します。';
+
+  @override
+  String get settingsUpdateDownloadFailed => 'ダウンロードに失敗しました';
+
+  @override
+  String get settingsUpdateInstallFailed => 'インストーラーを起動できませんでした';
+
+  @override
+  String get settingsUpdateSkipVersion => 'このバージョンをスキップ';
+
+  @override
+  String get settingsUpdateOpenInBrowser => 'ブラウザで開く';
+
+  @override
+  String get settingsUpdateApply => '更新して再起動';
+
+  @override
+  String get mainAnlas => 'Anlas';
+
+  @override
+  String get settingsAnlasTracker => 'Anlasトラッカー';
+
+  @override
+  String get settingsAnlasTrackerDesc => 'トップバーにAnlas残高を表示します';
+
+  @override
+  String get canvasEditorTitle => 'キャンバスエディタ';
+
+  @override
+  String get canvasEditInCanvas => 'キャンバス';
+
+  @override
+  String get canvasPaint => 'ペイント';
+
+  @override
+  String get canvasErase => '消しゴム';
+
+  @override
+  String get canvasSize => 'サイズ';
+
+  @override
+  String get canvasOpacity => '不透明度';
+
+  @override
+  String get canvasUndo => '元に戻す';
+
+  @override
+  String get canvasRedo => 'やり直し';
+
+  @override
+  String get canvasClear => 'すべてのストロークをクリア';
+
+  @override
+  String get canvasFlatten => '統合';
+
+  @override
+  String get canvasFlattenSend => '統合して送信';
+
+  @override
+  String get canvasBack => 'IMG2IMGに戻る';
+
+  @override
+  String get canvasDiscardTitle => '変更を破棄しますか？';
+
+  @override
+  String get canvasDiscardMessage => '保存されていないペイントストロークがあります。破棄しますか？';
+
+  @override
+  String get canvasDiscard => '破棄';
+
+  @override
+  String canvasFlattenFailed(String error) {
+    return '統合に失敗しました: $error';
+  }
+
+  @override
+  String get canvasFlattening => '統合中...';
+
+  @override
+  String get canvasRestoreSession => '前回のキャンバスセッションが見つかりました。復元しますか？';
+
+  @override
+  String get canvasRestore => '復元';
+
+  @override
+  String get canvasAutoSave => 'キャンバス自動保存';
+
+  @override
+  String get canvasAutoSaveDesc => 'クラッシュ復旧のためにキャンバス編集セッションを自動保存します';
+
+  @override
+  String get canvasColor => 'カラー';
+
+  @override
+  String get canvasLayers => 'レイヤー';
+
+  @override
+  String get canvasLayerAdd => 'レイヤー追加';
+
+  @override
+  String get canvasLayerDelete => 'レイヤー削除';
+
+  @override
+  String get canvasLayerDuplicate => 'レイヤー複製';
+
+  @override
+  String get canvasLayerRename => '名前変更';
+
+  @override
+  String get canvasLayerVisible => '表示';
+
+  @override
+  String get canvasLayerHidden => '非表示';
+
+  @override
+  String get canvasLayerOpacity => '不透明度';
+
+  @override
+  String get canvasLayerBlendMode => 'ブレンド';
+
+  @override
+  String get canvasLayerDeleteConfirm => 'このレイヤーを削除しますか？ストロークは失われます。';
+
+  @override
+  String canvasLayerDefault(int number) {
+    return 'レイヤー $number';
+  }
+
+  @override
+  String get canvasLayerClear => 'レイヤークリア';
+
+  @override
+  String get canvasLayerClearConfirm => 'このレイヤーのストロークをすべてクリアしますか？';
+
+  @override
+  String get canvasLine => 'ライン';
+
+  @override
+  String get canvasRectangle => '四角';
+
+  @override
+  String get canvasCircle => '円';
+
+  @override
+  String get canvasEyedropper => 'スポイト';
+
+  @override
+  String get canvasTransform => '移動';
+
+  @override
+  String get canvasImportImage => '画像を読み込む';
+
+  @override
+  String get canvasHelp => 'キャンバスヘルプ';
+
+  @override
+  String get canvasSmooth => 'スムーズ';
+
+  @override
+  String get canvasFill => '塗りつぶし';
+
+  @override
+  String get canvasText => 'テキスト';
+
+  @override
+  String get canvasTextHint => 'テキストを入力...';
+
+  @override
+  String get canvasTextSize => 'サイズ';
+
+  @override
+  String get canvasTextPlace => '配置';
+
+  @override
+  String get canvasTextFont => 'フォント';
+
+  @override
+  String get canvasTextSpacing => '文字間隔';
+
+  @override
+  String get canvasTextDefault => 'デフォルト';
+
+  @override
+  String get canvasBlendNormal => '通常';
+
+  @override
+  String get canvasBlendMultiply => '乗算';
+
+  @override
+  String get canvasBlendScreen => 'スクリーン';
+
+  @override
+  String get canvasBlendOverlay => 'オーバーレイ';
+
+  @override
+  String get settingsOutputFolder => '出力フォルダ';
+
+  @override
+  String get settingsOutputFolderDesc => '生成した画像の保存先を選択します';
+
+  @override
+  String get settingsFilenamePattern => 'ファイル名パターン';
+
+  @override
+  String get settingsFilenamePatternDesc =>
+      '保存画像のカスタム名。トークン: <prompt>, <seed>, <album:fallback>, <year>, <month>, <day>, <hours>, <minutes>, <seconds>, <date>, <time>, <digits:0000>。空欄でNAI形式のデフォルト。';
+
+  @override
+  String get settingsSavePathPattern => '保存サブフォルダーパターン';
+
+  @override
+  String get settingsSavePathPatternDesc =>
+      '出力フォルダー内にサブフォルダーを自動作成（例: <year>/<month>/<day>）。同じトークンが使えます。空欄で無効。';
+
+  @override
+  String get settingsPatternPreview => 'プレビュー';
+
+  @override
+  String get settingsOutputFolderDefault => 'デフォルト（アプリストレージ）';
+
+  @override
+  String get settingsOutputFolderBrowse => '参照';
+
+  @override
+  String get settingsOutputFolderClear => 'クリア';
+
+  @override
+  String get settingsUseSdCard => 'SDカードを使用';
+
+  @override
+  String get settingsSdDialogTitle => '出力先をSDカードへ移動';
+
+  @override
+  String get settingsSdUninstallWarning =>
+      'SDカード上の画像はアプリ専用フォルダ (Android/data) に保存されます。アプリをアンインストールすると、Androidは本体・SDカード双方のこのフォルダを削除します。大切な画像は先に別の場所へ書き出してください。';
+
+  @override
+  String settingsSdExistingInfo(int count, String size) {
+    return '$count個の既存ファイル($size)をSDカードへ移動できます。';
+  }
+
+  @override
+  String get settingsSdMoveButton => '既存ファイルを移動';
+
+  @override
+  String get settingsSdFreshButton => '移動せずに開始';
+
+  @override
+  String get settingsSdAlready => '出力フォルダはすでにSDカード上にあります';
+
+  @override
+  String settingsSdNotEnoughSpace(String needed, String available) {
+    return 'SDカードの空き容量が不足しています:必要 $needed、空き $available';
+  }
+
+  @override
+  String get settingsSdMoving => 'SDカードへ移動中… アプリを閉じないでください。';
+
+  @override
+  String settingsSdMoveDone(int count) {
+    return '$count個のファイルをSDカードへ移動しました';
+  }
+
+  @override
+  String settingsSdMoveFailed(int count) {
+    return '$count個のファイルを移動できませんでした — 「SDカードを使用」で再試行できます';
+  }
+
+  @override
+  String settingsSdMovePaused(int count) {
+    return '移動を中断しました — 残り$count個。「SDカードを使用」で再開できます。';
+  }
+
+  @override
+  String get settingsSdResumeTitle => 'SDカードへの移動を再開';
+
+  @override
+  String settingsSdResumeBody(int count) {
+    return '前回の移動で$count個のファイルが残っています。再開しますか?';
+  }
+
+  @override
+  String get settingsSdResume => '再開';
+
+  @override
+  String get resCustomEntry => 'カスタム...';
+
+  @override
+  String get resCustomDialogTitle => 'カスタム解像度';
+
+  @override
+  String get resCustomWidth => '幅';
+
+  @override
+  String get resCustomHeight => '高さ';
+
+  @override
+  String get resCustomName => '名前（任意）';
+
+  @override
+  String get resCustomUseOnce => '一度だけ使用';
+
+  @override
+  String get resCustomSaveAndUse => '保存して使用';
+
+  @override
+  String get resCustomMustBeMultiple => '64の倍数で入力してください';
+
+  @override
+  String get resCustomOutOfRange => '64から2048の間で入力してください';
+
+  @override
+  String get themeSectionCharacters => 'キャラクター';
+
+  @override
+  String get charEditorTitle => 'キャラクター';
+
+  @override
+  String get charEditorExpanded => '展開';
+
+  @override
+  String get charEditorCompact => 'コンパクト';
+
+  @override
+  String get charEditorAutoPosition => '自動';
+
+  @override
+  String get charEditorUsingCompactShelf => 'プロンプト下のコンパクトシェルフを使用中';
+
+  @override
+  String get charEditorCharacterName => 'キャラクター名';
+
+  @override
+  String get charEditorPromptHint => 'キャラクタータグ、外見...';
+
+  @override
+  String get charEditorUcHint => '除外タグ...';
+
+  @override
+  String get charEditorShowUc => 'UC';
+
+  @override
+  String get charEditorShowPosition => 'POS';
+
+  @override
+  String get charEditorShowPresets => 'PRESET';
+
+  @override
+  String get charEditorAiDecidesPosition => 'AIが配置を決定';
+
+  @override
+  String get charEditorAddCharacter => 'キャラクターを追加';
+
+  @override
+  String get charEditorCharacterLimitReached => 'キャラクターの上限に達しました（6）';
+
+  @override
+  String charEditorDeleteConfirm(String name) {
+    return '「$name」を削除しますか？';
+  }
+
+  @override
+  String get charEditorDeleteCharacter => 'キャラクターを削除';
+
+  @override
+  String get charEditorInteractions => 'インタラクション';
+
+  @override
+  String get charEditorAddInteraction => 'インタラクションを追加';
+
+  @override
+  String charEditorInteractionDisplay(
+    String source,
+    String target,
+    String action,
+  ) {
+    return '$source → $target: $action';
+  }
+
+  @override
+  String charEditorMutualDisplay(String source, String target, String action) {
+    return '$source ↔ $target: $action';
+  }
+
+  @override
+  String get charEditorSavePreset => 'プリセットを保存';
+
+  @override
+  String get charEditorLoadPreset => 'プリセットを読み込み';
+
+  @override
+  String get charEditorPresetName => 'プリセット名';
+
+  @override
+  String get charEditorNoPresets => 'キャラクタープリセットが保存されていません';
+
+  @override
+  String get charEditorSelectSource => 'ソースキャラクター';
+
+  @override
+  String get charEditorSelectTarget => 'ターゲットキャラクター';
+
+  @override
+  String charEditorCharacterN(int n) {
+    return 'キャラクター $n';
+  }
+
+  @override
+  String get charEditorContinue => '続行';
+
+  @override
+  String get charEditorParticipants => '参加者';
+
+  @override
+  String get charEditorSourceTarget => 'ソース → ターゲット';
+
+  @override
+  String get charEditorMutual => '相互';
+
+  @override
+  String get jukeboxTitle => 'ジュークボックス';
+
+  @override
+  String get jukeboxShuffleAll => 'すべてシャッフル';
+
+  @override
+  String get jukeboxPlayAll => 'すべて再生';
+
+  @override
+  String get jukeboxNoSongPlaying => '再生中の曲なし';
+
+  @override
+  String get jukeboxNowPlaying => '再生中';
+
+  @override
+  String get jukeboxSoundFont => 'サウンドフォント';
+
+  @override
+  String get jukeboxSettings => '設定';
+
+  @override
+  String get jukeboxQueue => 'キュー';
+
+  @override
+  String get jukeboxQueueEmpty => 'キューは空です';
+
+  @override
+  String get jukeboxRepeat => 'リピート';
+
+  @override
+  String get jukeboxShuffle => 'シャッフル';
+
+  @override
+  String get jukeboxOn => 'オン';
+
+  @override
+  String get jukeboxOff => 'オフ';
+
+  @override
+  String get jukeboxAddToQueue => 'キューに追加';
+
+  @override
+  String get jukeboxMusicUnavailable => '音楽再生は利用できません';
+
+  @override
+  String get jukeboxDllMissing => 'FluidSynth DLLが見つかりません';
+
+  @override
+  String get jukeboxCategoryAll => 'すべて';
+
+  @override
+  String get jukeboxCategoryClassical => 'クラシック';
+
+  @override
+  String get jukeboxCategoryAnime => 'アニメ';
+
+  @override
+  String get jukeboxCategoryGame => 'ゲーム';
+
+  @override
+  String get jukeboxCategoryJazz => 'ジャズ';
+
+  @override
+  String get jukeboxCategoryAmbient => 'アンビエント';
+
+  @override
+  String get jukeboxCategoryHoliday => 'ホリデー';
+
+  @override
+  String get jukeboxCategoryMeme => 'ミーム';
+
+  @override
+  String get jukeboxCategoryRock => 'ロック';
+
+  @override
+  String get jukeboxEnableMusic => '音楽を有効化';
+
+  @override
+  String get jukeboxMusicVolume => '音楽の音量';
+
+  @override
+  String get jukeboxKaraokeLyrics => 'カラオケ歌詞';
+
+  @override
+  String get mlModels => 'MLモデル';
+
+  @override
+  String get mlBgRemoval => '背景除去';
+
+  @override
+  String get mlUpscaling => 'アップスケーリング';
+
+  @override
+  String get mlSegmentation => 'セグメンテーション';
+
+  @override
+  String get mlDownload => 'ダウンロード';
+
+  @override
+  String get mlDownloaded => 'ダウンロード済み';
+
+  @override
+  String get mlRetry => '再試行';
+
+  @override
+  String get mlCancel => 'キャンセル';
+
+  @override
+  String get mlDelete => '削除';
+
+  @override
+  String get mlRemoveBg => '背景除去';
+
+  @override
+  String get mlUpscale => 'アップスケール';
+
+  @override
+  String get mlSegment => 'セグメント';
+
+  @override
+  String get mlCanvas => 'キャンバス';
+
+  @override
+  String get mlSave => '保存';
+
+  @override
+  String get mlDiscard => '破棄';
+
+  @override
+  String get mlAddPoint => '追加';
+
+  @override
+  String get mlRemovePoint => '除去';
+
+  @override
+  String get mlTierFast => '高速';
+
+  @override
+  String get mlTierBalanced => 'バランス';
+
+  @override
+  String get mlTierBalancedShort => 'バランス';
+
+  @override
+  String get mlTierQuality => '高品質';
+
+  @override
+  String get mlRemovingBg => '背景を除去中';
+
+  @override
+  String get mlUpscalingImages => '画像をアップスケール中';
+
+  @override
+  String get mlBgRemovalFailed => '背景除去に失敗';
+
+  @override
+  String get mlUpscaleFailed => 'アップスケールに失敗';
+
+  @override
+  String get mlRecommended => '推奨';
+
+  @override
+  String get mlMayBeSlow => '動作が遅い可能性';
+
+  @override
+  String get mlNotRecommended => '非推奨';
+
+  @override
+  String get mlNotAvailableOnPlatform => 'このプラットフォームでは利用不可';
+
+  @override
+  String get mlLowRamWarning => 'メモリ不足 — クラッシュの恐れ';
+
+  @override
+  String get mlBgRemovedAndSaved => '背景除去して保存しました';
+
+  @override
+  String mlBgRemovedCount(int completed, int total) {
+    return '背景除去: $completed/$total 画像';
+  }
+
+  @override
+  String mlUpscaledCount(int completed, int total) {
+    return 'アップスケール: $completed/$total 画像';
+  }
+
+  @override
+  String mlBgRemovedSavedAs(String name) {
+    return '背景除去: $name に保存しました';
+  }
+
+  @override
+  String get toolsDirectorTools => 'ディレクターツール';
+
+  @override
+  String get toolsEnhance => 'エンハンス';
+
+  @override
+  String get directorToolsTitle => 'ディレクターツール';
+
+  @override
+  String get directorToolsDesc => 'サーバーサイド画像操作：背景除去、線画抽出、着色など';
+
+  @override
+  String get directorToolsUseCurrent => '現在の生成画像を使用';
+
+  @override
+  String get directorToolsUseCurrentDesc => '最後に生成した画像をソースとして使用';
+
+  @override
+  String get directorToolsSelectTool => 'ツールを選択';
+
+  @override
+  String get directorToolsProcess => '処理';
+
+  @override
+  String get directorToolsProcessing => '処理中...';
+
+  @override
+  String get directorToolsDefry => 'DEFRY（ツール強度）';
+
+  @override
+  String get directorToolsMood => 'ムード';
+
+  @override
+  String get directorToolsPrompt => 'プロンプト';
+
+  @override
+  String get directorToolsPromptHint => '着色/感情用のオプションプロンプト...';
+
+  @override
+  String get directorToolsSaved => '結果をギャラリーに保存しました';
+
+  @override
+  String get enhanceTitle => 'エンハンス';
+
+  @override
+  String get enhanceDesc => 'IMG2IMGエンハンスで画像を再処理';
+
+  @override
+  String get enhanceUseCurrent => '現在の生成画像を使用';
+
+  @override
+  String get enhanceUseCurrentDesc => '最後に生成した画像をソースとして使用';
+
+  @override
+  String get enhanceProcess => 'エンハンス';
+
+  @override
+  String get enhanceProcessing => 'エンハンス中...';
+
+  @override
+  String get enhancePrompt => 'プロンプト';
+
+  @override
+  String get enhanceNegative => 'ネガティブ';
+
+  @override
+  String get enhanceStrength => '強度';
+
+  @override
+  String get enhanceNoise => 'ノイズ';
+
+  @override
+  String get enhanceSaved => 'エンハンス画像をギャラリーに保存しました';
+
+  @override
+  String get settingsSeedControl => 'シード表示';
+
+  @override
+  String get settingsSeedControlDesc => '生成画面にシード値とランダム切り替えを表示';
+
+  @override
+  String get settingsShowTooltips => 'ツールチップ表示';
+
+  @override
+  String get settingsShowTooltipsDesc => 'ボタンにカーソルを合わせたり長押しした時にツールチップを表示';
+
+  @override
+  String get commonMenu => 'メニュー';
+
+  @override
+  String get presetDuplicate => '複製';
+
+  @override
+  String get presetLoad => 'プリセット読み込み';
+
+  @override
+  String get settingsStylesToggle => 'スタイル切り替え';
+
+  @override
+  String get canvasLayerToggleVisibility => '表示切り替え';
+
+  @override
+  String get mainRefreshAnlas => 'Anlasを更新';
+
+  @override
+  String get enhanceSettingsTooltip => '設定';
+
+  @override
+  String get directorToolsSettingsTooltip => '設定';
+
+  @override
+  String get sidebarCollapse => '折りたたむ';
+
+  @override
+  String get sidebarExpand => '展開';
+
+  @override
+  String get naiUpscale => 'NAIアップスケール';
+
+  @override
+  String get naiUpscaling => 'APIでアップスケール中...';
+
+  @override
+  String get naiUpscaleFailed => 'APIアップスケールに失敗';
+
+  @override
+  String naiUpscaledCount(int completed, int total) {
+    return 'APIアップスケール: $completed/$total 画像';
+  }
+
+  @override
+  String get naiApiKeyRequired => 'APIキーが必要です';
+
+  @override
+  String get comparisonBefore => 'ビフォー';
+
+  @override
+  String get comparisonAfter => 'アフター';
+
+  @override
+  String get comparisonSideBySide => '並べて表示';
+
+  @override
+  String get comparisonSliderMode => 'スライダーモード';
+
+  @override
+  String get settingsBgRemovalButton => '背景除去ボタン';
+
+  @override
+  String get settingsBgRemovalButtonDesc => '画像ビューアに背景除去ボタンを表示します';
+
+  @override
+  String get settingsUpscaleButton => 'アップスケールボタン';
+
+  @override
+  String get settingsUpscaleButtonDesc => '画像ビューアにアップスケールボタンを表示します';
+
+  @override
+  String get settingsEnhanceButton => 'エンハンスボタン';
+
+  @override
+  String get settingsEnhanceButtonDesc => '画像ビューアにエンハンスボタンを表示します';
+
+  @override
+  String get settingsDirectorToolsButton => 'ディレクターツールボタン';
+
+  @override
+  String get settingsDirectorToolsButtonDesc => '画像ビューアにディレクターツールボタンを表示します';
+
+  @override
+  String get settingsExportButton => 'デバイスへエクスポートボタン';
+
+  @override
+  String get settingsExportButtonDesc => 'フォトギャラリーに直接保存するエクスポートボタンを表示';
+
+  @override
+  String get settingsAutoExport => '自動エクスポート';
+
+  @override
+  String get settingsAutoExportDesc => '生成画像を自動的にデバイスのフォトギャラリーに保存';
+
+  @override
+  String get settingsExportAlbum => 'エクスポートアルバム名';
+
+  @override
+  String get settingsExportAlbumDesc => 'エクスポートされた画像が保存されるデバイスフォルダ/アルバム';
+
+  @override
+  String get settingsExportFolder => 'エクスポートフォルダ';
+
+  @override
+  String get settingsExportFolderDesc =>
+      'カスタムフォルダを選択（SDカードなど）。設定するとアルバム名より優先されます。';
+
+  @override
+  String get settingsExportFolderDefault => 'デフォルト（デバイスギャラリー）';
+
+  @override
+  String get settingsUpscaleBackend => 'アップスケールバックエンド';
+
+  @override
+  String get settingsUpscaleBackendDesc =>
+      'ローカルMLモデルまたはNovelAI APIからアップスケール方法を選択';
+
+  @override
+  String get settingsUpscaleBackendMl => 'ML（ローカル）';
+
+  @override
+  String get settingsUpscaleBackendNovelai => 'NovelAI（API）';
+
+  @override
+  String get quickActionEnhance => 'エンハンス';
+
+  @override
+  String get quickActionDirectorTools => 'ディレクターツール';
+
+  @override
+  String get themeColorBgRemoval => '背景除去';
+
+  @override
+  String get themeColorUpscale => 'アップスケール';
+
+  @override
+  String get jukeboxSynthUnavailable => 'シンセサイザーが利用できません';
+
+  @override
+  String get jukeboxImport => 'インポート';
+
+  @override
+  String get jukeboxKeyboard => 'キーボード';
+
+  @override
+  String get jukeboxGame => 'ゲーム';
+
+  @override
+  String get jukeboxEnd => '終了';
+
+  @override
+  String get jukeboxTempo => 'テンポ';
+
+  @override
+  String get jukeboxKeyboardHint => 'キー: A-L  シャープ: W,E,T,Y,U,O,P  オクターブ: Z/X';
+
+  @override
+  String get jukeboxGameResults => '結果';
+
+  @override
+  String get jukeboxGameScore => 'スコア';
+
+  @override
+  String get jukeboxGameMaxCombo => '最大コンボ';
+
+  @override
+  String get jukeboxGameAccuracy => '精度';
+
+  @override
+  String get jukeboxGamePerfect => 'パーフェクト';
+
+  @override
+  String get jukeboxGameGreat => 'グレート';
+
+  @override
+  String get jukeboxGameGood => 'グッド';
+
+  @override
+  String get jukeboxGameMiss => 'ミス';
+
+  @override
+  String get jukeboxHighScores => 'ハイスコア';
+
+  @override
+  String jukeboxQueueCount(int count) {
+    return 'キュー ($count)';
+  }
+
+  @override
+  String get jukeboxStyle => 'スタイル';
+
+  @override
+  String get jukeboxGameModeTooltip => 'ゲームモード';
+
+  @override
+  String get jukeboxEndGameTooltip => 'ゲーム終了';
+
+  @override
+  String get jukeboxImportTooltip => 'インポート';
+
+  @override
+  String get jukeboxShuffleAllTooltip => 'すべてシャッフル';
+
+  @override
+  String get jukeboxPlayAllTooltip => 'すべて再生';
+
+  @override
+  String get jukeboxKeyboardTooltip => 'キーボード';
+
+  @override
+  String get jukeboxGameMode => 'ゲームモード';
+
+  @override
+  String get jukeboxNoSongs => '曲がありません';
+
+  @override
+  String get jukeboxRecommendedBadge => '推奨';
+
+  @override
+  String get jukeboxAnalyzing => '分析中...';
+
+  @override
+  String get jukeboxNoScoresYet => 'スコアなし';
+
+  @override
+  String get jukeboxSelectInstrument => '楽器を選択';
+
+  @override
+  String get jukeboxWatch => '観る';
+
+  @override
+  String get jukeboxPlayGame => 'プレイ';
+
+  @override
+  String jukeboxChannelLabel(int channel) {
+    return 'CH $channel';
+  }
+
+  @override
+  String jukeboxCombo(int count) {
+    return '$count コンボ';
+  }
+
+  @override
+  String get jukeboxPressOnTheLine => 'ラインに合わせて押す';
+
+  @override
+  String get jukeboxGradePerfect => 'パーフェクト';
+
+  @override
+  String get jukeboxGradeGreat => 'グレート';
+
+  @override
+  String get jukeboxGradeGood => 'グッド';
+
+  @override
+  String get jukeboxGradeMiss => 'ミス';
+
+  @override
+  String get jukeboxDifficultyEasy => 'イージー';
+
+  @override
+  String get jukeboxDifficultyMedium => 'ノーマル';
+
+  @override
+  String get jukeboxDifficultyHard => 'ハード';
+
+  @override
+  String get jukeboxDifficultyExtreme => 'エクストリーム';
+
+  @override
+  String get jukeboxInstrumentAcousticGrandPiano => 'アコースティックグランドピアノ';
+
+  @override
+  String get jukeboxInstrumentElectricPiano => 'エレクトリックピアノ';
+
+  @override
+  String get jukeboxInstrumentHarpsichord => 'ハープシコード';
+
+  @override
+  String get jukeboxInstrumentVibraphone => 'ビブラフォン';
+
+  @override
+  String get jukeboxInstrumentXylophone => 'シロフォン';
+
+  @override
+  String get jukeboxInstrumentChurchOrgan => 'チャーチオルガン';
+
+  @override
+  String get jukeboxInstrumentNylonGuitar => 'ナイロンギター';
+
+  @override
+  String get jukeboxInstrumentSteelGuitar => 'スチールギター';
+
+  @override
+  String get jukeboxInstrumentCleanElectricGuitar => 'クリーンエレキギター';
+
+  @override
+  String get jukeboxInstrumentDistortionGuitar => 'ディストーションギター';
+
+  @override
+  String get jukeboxInstrumentAcousticBass => 'アコースティックベース';
+
+  @override
+  String get jukeboxInstrumentElectricBassFinger => 'エレキベース（フィンガー）';
+
+  @override
+  String get jukeboxInstrumentViolin => 'バイオリン';
+
+  @override
+  String get jukeboxInstrumentCello => 'チェロ';
+
+  @override
+  String get jukeboxInstrumentOrchestralHarp => 'オーケストラルハープ';
+
+  @override
+  String get jukeboxInstrumentStringEnsemble => '弦楽アンサンブル';
+
+  @override
+  String get jukeboxInstrumentTrumpet => 'トランペット';
+
+  @override
+  String get jukeboxInstrumentFrenchHorn => 'フレンチホルン';
+
+  @override
+  String get jukeboxInstrumentAltoSax => 'アルトサックス';
+
+  @override
+  String get jukeboxInstrumentFlute => 'フルート';
+
+  @override
+  String get jukeboxInstrumentSquareLeadSynth => 'スクエアリード（シンセ）';
+
+  @override
+  String get jukeboxInstrumentLeadVoice => 'リード6（ボイス）';
+
+  @override
+  String get jukeboxKaraokeBadge => 'KAR';
+
+  @override
+  String get jukeboxDeleteCustomSongTooltip => 'カスタム曲を削除';
+
+  @override
+  String get jukeboxDeleteSong => '曲を削除';
+
+  @override
+  String jukeboxDeleteSongConfirm(String title) {
+    return '「$title」を削除しますか？ファイルがディスクから削除されます。';
+  }
+
+  @override
+  String get jukeboxStyleHighlight => 'ハイライト';
+
+  @override
+  String get jukeboxStyleUpcoming => '次の歌詞';
+
+  @override
+  String get jukeboxStyleNextLine => '次の行';
+
+  @override
+  String get jukeboxStyleGlow => 'グロー';
+
+  @override
+  String get jukeboxVisualizer => 'ビジュアライザー';
+
+  @override
+  String get jukeboxVizIntensity => '強度';
+
+  @override
+  String get jukeboxVizSpeed => '速度';
+
+  @override
+  String get jukeboxVizDensity => '密度';
+
+  @override
+  String get jukeboxFontSize => 'サイズ';
+
+  @override
+  String get jukeboxResetToDefaults => 'デフォルトに戻す';
+
+  @override
+  String jukeboxRepeatMode(String mode) {
+    return 'リピート: $mode';
+  }
+
+  @override
+  String jukeboxShuffleStatus(String status) {
+    return 'シャッフル: $status';
+  }
+
+  @override
+  String get galleryBadgeNaiUpscale => 'NAIアップスケール';
+
+  @override
+  String galleryBadgeDirectorTool(String tool) {
+    return 'ディレクター: $tool';
+  }
+
+  @override
+  String get galleryBadgeEnhanced => 'エンハンス済み';
+
+  @override
+  String get galleryBadgeBgRemoved => '背景除去済み';
+
+  @override
+  String get galleryBadgeUpscaled => 'アップスケール済み';
+
+  @override
+  String get galleryBgRemovalFailed => '背景除去に失敗';
+
+  @override
+  String naiUpscaleTooLarge(int width, int height) {
+    return '画像がNAIアップスケールには大きすぎます（${width}x$heightは1辺2048px制限を超過）';
+  }
+
+  @override
+  String get naiRemovingBackground => '背景を除去中...';
+
+  @override
+  String get naiBgRemovalFailed => 'NAI背景除去に失敗';
+
+  @override
+  String get directorToolsFromGallery => 'ギャラリーから';
+
+  @override
+  String get settingsBgRemovalBackend => '背景除去バックエンド';
+
+  @override
+  String get settingsBgRemovalBackendDesc =>
+      'ローカルMLモデルまたはNovelAI APIから背景除去方法を選択';
+
+  @override
+  String get importDialogTitle => 'メタデータのインポート';
+
+  @override
+  String get importCategoryPrompt => 'プロンプト';
+
+  @override
+  String get importCategoryNegative => 'ネガティブプロンプト';
+
+  @override
+  String get importCategoryCharacters => 'キャラクター';
+
+  @override
+  String get importCategorySeed => 'シード';
+
+  @override
+  String get importCategoryStyles => 'スタイル';
+
+  @override
+  String get importCategorySettings => '設定（解像度・サンプラー・スケール）';
+
+  @override
+  String get importActionImport => 'インポート';
+
+  @override
+  String get importNothingAvailable => 'インポート可能なメタデータがありません';
+
+  @override
+  String get importStylesAutoDetected => 'プロンプトから自動検出';
+
+  @override
+  String get img2imgOutputRes => '出力解像度';
+
+  @override
+  String get img2imgResetRes => 'ソースにリセット';
+
+  @override
+  String get img2imgChangeRes => '変更';
+
+  @override
+  String get duplicateImageWarning =>
+      '前回と同一の画像が生成されました — シードを変更するか、バイブ/リファレンスを確認してください';
+
+  @override
+  String get duplicateImageRandomize => 'ランダム化';
+
+  @override
+  String get settingsCredits => 'クレジット';
+
+  @override
+  String get settingsSpecialThanks => 'スペシャルサンクス';
+
+  @override
+  String get settingsAnonTesters => '…そして全ての匿名バグテスターの皆さん';
+
+  @override
+  String get settingsLayoutMode => 'レイアウトモード';
+
+  @override
+  String get settingsLayoutModeDesc => 'ワイドスクリーンでの設定の表示方法';
+
+  @override
+  String get settingsLayoutAuto => '自動';
+
+  @override
+  String get settingsLayoutSidebar => 'サイドバー';
+
+  @override
+  String get settingsLayoutClassic => 'クラシック';
+
+  @override
+  String get settingsPromptPosition => 'プロンプト位置';
+
+  @override
+  String get settingsPromptPositionDesc => 'サイドバーモードでのプロンプト入力の位置';
+
+  @override
+  String get settingsPromptLeft => '左';
+
+  @override
+  String get settingsPromptRight => '右';
+
+  @override
+  String get settingsSidebarWidth => 'サイドバー幅';
+
+  @override
+  String get settingsSidebarWidthDesc => 'コンパクトでより狭いサイドバーパネルにします';
+
+  @override
+  String get settingsSidebarCompact => 'コンパクト';
+
+  @override
+  String get settingsSidebarNormal => '通常';
+
+  @override
+  String get toolsTextGen => 'テキスト生成';
+
+  @override
+  String get textGenTitle => 'テキスト生成';
+
+  @override
+  String get textGenInput => '入力';
+
+  @override
+  String get textGenInputHint => '続きを生成する元のテキスト…';
+
+  @override
+  String get textGenInputNote => 'NovelAIのテキストモデルは入力の続きを生成します。チャット形式ではありません。';
+
+  @override
+  String get textGenModel => 'モデル';
+
+  @override
+  String get textGenModelCustom => 'カスタム…';
+
+  @override
+  String get textGenParameters => 'パラメータ';
+
+  @override
+  String get textGenPreset => 'プリセット';
+
+  @override
+  String get textGenTemperature => 'Temperature';
+
+  @override
+  String get textGenMaxLength => '最大長';
+
+  @override
+  String get textGenTopP => 'Top P';
+
+  @override
+  String get textGenTopK => 'Top K';
+
+  @override
+  String get textGenRepetitionPenalty => '繰り返しペナルティ';
+
+  @override
+  String get textGenPhraseRepPen => 'フレーズ繰り返しペナルティ';
+
+  @override
+  String get textGenGenerateUntilSentence => '文末まで生成';
+
+  @override
+  String get textGenStopStrings => '停止文字列';
+
+  @override
+  String get textGenStopStringsNote => '1行に1つ。最初に一致した位置で出力を切り詰めます（クライアント側）。';
+
+  @override
+  String get textGenStopStringsHint => '例：会話の終わりの行';
+
+  @override
+  String get textGenGenerate => '生成';
+
+  @override
+  String get textGenCancel => 'キャンセル';
+
+  @override
+  String get textGenContinue => '続行';
+
+  @override
+  String get textGenCopy => 'コピー';
+
+  @override
+  String get textGenClear => 'クリア';
+
+  @override
+  String get textGenCopied => 'クリップボードにコピーしました';
+
+  @override
+  String get textGenOutput => '出力';
+
+  @override
+  String get textGenOutputEmpty => '生成されたテキストがここに表示されます。';
+
+  @override
+  String get textGenHistory => '履歴';
+
+  @override
+  String get textGenEnableThinking => 'Thinking を有効化';
+
+  @override
+  String get textGenEnableThinkingNote =>
+      'GLM は回答前に推論ブロックを生成します。ストリーミングは無効化されます。';
+
+  @override
+  String get textGenReasoning => '推論';
+}

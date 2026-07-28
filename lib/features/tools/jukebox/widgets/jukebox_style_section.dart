@@ -1,0 +1,319 @@
+// Flutter stable 3.41+ added a `RepeatMode` to
+// widgets/repeating_animation_builder.dart, which collides with our jukebox
+// enum and breaks the web (dart2js) build. Hiding it here keeps the import
+// safe across SDK versions; the ignore covers older SDKs that don't yet
+// export the symbol so `hide` would otherwise warn.
+// ignore: undefined_hidden_name
+import 'package:flutter/material.dart' hide RepeatMode;
+import '../../../../core/jukebox/models/jukebox_song.dart';
+import '../../../../core/jukebox/providers/jukebox_notifier.dart';
+import '../../../../core/theme/vision_tokens.dart';
+import '../../../../core/widgets/color_swatch_row.dart';
+import '../../../../core/widgets/vision_slider.dart';
+import '../../../../core/l10n/l10n_extensions.dart';
+
+/// Karaoke style customization: colors, visualizer style, intensity sliders,
+/// font scale, and a reset button.
+class JukeboxStyleSection extends StatelessWidget {
+  final JukeboxNotifier jukebox;
+  final VisionTokens t;
+
+  const JukeboxStyleSection({super.key, required this.jukebox, required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Highlight color
+        ColorSwatchRow(
+          label: l.jukeboxStyleHighlight,
+          current: jukebox.karaokeHighlightColor,
+          themeDefault: t.accent,
+          onChanged: (c) => jukebox.setKaraokeHighlightColor(c),
+          t: t,
+        ),
+        const SizedBox(height: 10),
+        // Upcoming color
+        ColorSwatchRow(
+          label: l.jukeboxStyleUpcoming,
+          current: jukebox.karaokeUpcomingColor,
+          themeDefault: t.textPrimary,
+          onChanged: (c) => jukebox.setKaraokeUpcomingColor(c),
+          t: t,
+        ),
+        const SizedBox(height: 10),
+        // Next line color
+        ColorSwatchRow(
+          label: l.jukeboxStyleNextLine,
+          current: jukebox.karaokeNextLineColor,
+          themeDefault: t.textMinimal,
+          onChanged: (c) => jukebox.setKaraokeNextLineColor(c),
+          t: t,
+        ),
+        const SizedBox(height: 10),
+        // Glow color
+        ColorSwatchRow(
+          label: l.jukeboxStyleGlow,
+          current: jukebox.visualizerColor,
+          themeDefault: t.accent,
+          onChanged: (c) => jukebox.setVisualizerColor(c),
+          t: t,
+        ),
+        const SizedBox(height: 16),
+
+        // Visualizer style chips
+        Text(l.jukeboxVisualizer,
+            style: TextStyle(
+                color: t.textDisabled,
+                fontSize: t.fontSize(7),
+                letterSpacing: 1)),
+        const SizedBox(height: 8),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: VisualizerStyle.values.map((style) {
+              final selected = jukebox.visualizerStyle == style;
+              return Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: InkWell(
+                  onTap: () => jukebox.setVisualizerStyle(style),
+                  borderRadius: BorderRadius.circular(4),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: selected ? t.accent.withValues(alpha: 0.15) : t.borderSubtle,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: selected ? t.accent : Colors.transparent,
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(style.name.toUpperCase(),
+                        style: TextStyle(
+                            color: selected ? t.accent : t.textSecondary,
+                            fontSize: t.fontSize(7),
+                            letterSpacing: 1,
+                            fontWeight: selected ? FontWeight.bold : FontWeight.normal)),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        // Intensity / Speed / Density sliders
+        _buildVizSlider(l.jukeboxVizIntensity, jukebox.vizIntensity, (v) => jukebox.setVizIntensity(v)),
+        const SizedBox(height: 4),
+        _buildVizSlider(l.jukeboxVizSpeed, jukebox.vizSpeed, (v) => jukebox.setVizSpeed(v)),
+        const SizedBox(height: 4),
+        _buildVizSlider(l.jukeboxVizDensity, jukebox.vizDensity, (v) => jukebox.setVizDensity(v)),
+
+        const SizedBox(height: 16),
+
+        // Font scale slider
+        Row(
+          children: [
+            Text(l.jukeboxFontSize,
+                style: TextStyle(
+                    color: t.textDisabled,
+                    fontSize: t.fontSize(7),
+                    letterSpacing: 1)),
+            Expanded(
+              child: VisionSlider.accent(
+                value: jukebox.karaokeFontScale,
+                min: 0.5,
+                max: 2.0,
+                onChanged: (v) => jukebox.setKaraokeFontScale(v),
+                t: t,
+              ),
+            ),
+            Text('${(jukebox.karaokeFontScale * 100).round()}%',
+                style: TextStyle(
+                    color: t.textDisabled,
+                    fontSize: t.fontSize(7),
+                    letterSpacing: 1)),
+          ],
+        ),
+
+        const SizedBox(height: 12),
+
+        // Reset button
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: jukebox.resetKaraokeStyle,
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            ),
+            child: Text(l.jukeboxResetToDefaults,
+                style: TextStyle(
+                    color: t.textDisabled,
+                    fontSize: t.fontSize(7),
+                    letterSpacing: 1)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVizSlider(String label, double value, void Function(double) onChanged) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 70,
+          child: Text(label,
+              style: TextStyle(
+                  color: t.textDisabled,
+                  fontSize: t.fontSize(7),
+                  letterSpacing: 1)),
+        ),
+        Expanded(
+          child: VisionSlider.accent(
+            value: value,
+            onChanged: onChanged,
+            t: t,
+          ),
+        ),
+        Text('${(value * 100).round()}%',
+            style: TextStyle(
+                color: t.textDisabled,
+                fontSize: t.fontSize(7),
+                letterSpacing: 1)),
+      ],
+    );
+  }
+}
+
+/// Desktop settings section: repeat mode and shuffle toggle.
+class JukeboxSettingsSection extends StatelessWidget {
+  final JukeboxNotifier jukebox;
+  final VisionTokens t;
+
+  const JukeboxSettingsSection({super.key, required this.jukebox, required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l;
+    return Column(
+      children: [
+        // Repeat
+        Row(
+          children: [
+            IconButton(
+              icon: Icon(
+                jukebox.repeatMode == RepeatMode.one ? Icons.repeat_one : Icons.repeat,
+                size: 16,
+                color: jukebox.repeatMode != RepeatMode.off ? t.accent : t.textDisabled,
+              ),
+              onPressed: jukebox.cycleRepeatMode,
+              constraints: const BoxConstraints(),
+              padding: const EdgeInsets.all(4),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              l.jukeboxRepeatMode(jukebox.repeatMode.name.toUpperCase()),
+              style: TextStyle(
+                  color: t.textDisabled,
+                  fontSize: t.fontSize(8),
+                  letterSpacing: 1),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        // Shuffle
+        Row(
+          children: [
+            IconButton(
+              icon: Icon(
+                Icons.shuffle,
+                size: 16,
+                color: jukebox.shuffle ? t.accent : t.textDisabled,
+              ),
+              onPressed: jukebox.toggleShuffle,
+              constraints: const BoxConstraints(),
+              padding: const EdgeInsets.all(4),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              l.jukeboxShuffleStatus(jukebox.shuffle ? l.jukeboxOn : l.jukeboxOff),
+              style: TextStyle(
+                  color: t.textDisabled,
+                  fontSize: t.fontSize(8),
+                  letterSpacing: 1),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Compact mobile settings row (repeat, shuffle, visualizer toggle) shown
+/// in the mobile expanded now-playing view.
+class JukeboxMobileSettingsRow extends StatelessWidget {
+  final JukeboxNotifier jukebox;
+  final VisionTokens t;
+
+  const JukeboxMobileSettingsRow({super.key, required this.jukebox, required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l;
+    return Row(
+      children: [
+        IconButton(
+          icon: Icon(
+            jukebox.repeatMode == RepeatMode.one ? Icons.repeat_one : Icons.repeat,
+            size: 16,
+            color: jukebox.repeatMode != RepeatMode.off ? t.accent : t.textDisabled,
+          ),
+          onPressed: jukebox.cycleRepeatMode,
+          constraints: const BoxConstraints(),
+          padding: const EdgeInsets.all(4),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          jukebox.repeatMode.name.toUpperCase(),
+          style: TextStyle(
+              color: t.textDisabled,
+              fontSize: t.fontSize(7),
+              letterSpacing: 1),
+        ),
+        const SizedBox(width: 16),
+        IconButton(
+          icon: Icon(
+            Icons.shuffle,
+            size: 16,
+            color: jukebox.shuffle ? t.accent : t.textDisabled,
+          ),
+          onPressed: jukebox.toggleShuffle,
+          constraints: const BoxConstraints(),
+          padding: const EdgeInsets.all(4),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          jukebox.shuffle ? l.jukeboxOn : l.jukeboxOff,
+          style: TextStyle(
+              color: t.textDisabled,
+              fontSize: t.fontSize(7),
+              letterSpacing: 1),
+        ),
+        const SizedBox(width: 16),
+        IconButton(
+          icon: Icon(
+            jukebox.showKaraokeInPanel ? Icons.visibility : Icons.visibility_off,
+            size: 16,
+            color: jukebox.showKaraokeInPanel ? t.accent : t.textDisabled,
+          ),
+          onPressed: jukebox.toggleKaraokeInPanel,
+          constraints: const BoxConstraints(),
+          padding: const EdgeInsets.all(4),
+        ),
+      ],
+    );
+  }
+}

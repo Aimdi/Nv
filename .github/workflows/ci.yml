@@ -20,25 +20,29 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
       - uses: android-actions/setup-android@v3
 
-      - uses: gradle/actions/setup-gradle@v4
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
 
       - name: Unit tests
-        run: ./gradlew testDebugUnitTest
+        run: flutter test
 
-      - name: Lint
-        run: ./gradlew lintDebug
-
-      # CatalogDatabaseTest opens the committed catalog asset through Room, so a schema change
-      # without a regenerated asset fails the unit tests above rather than only on a device.
-      - name: Assemble debug APK
-        run: ./gradlew assembleDebug
+      - name: Build release APK
+        run: flutter build apk --release
 
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-and-lint-reports
+          name: nv-apk-and-reports
           path: |
-            app/build/reports/
-            app/build/test-results/
+            build/app/outputs/flutter-apk/
+            build/reports/
