@@ -18,6 +18,10 @@ Kotlin, Jetpack Compose, Room (+ FTS4), DataStore, Retrofit + OkHttp, Coil. Depe
 
 Application id: `com.aimdi.nv`
 
+## Install
+
+Download **[`nv-v0.2.0.apk`](https://github.com/Aimdi/Nv/releases/download/v0.2.0/nv-v0.2.0.apk)** from [Releases](https://github.com/Aimdi/Nv/releases) and sideload it. For updates, add this repository in [Obtainium](https://github.com/ImranR98/Obtainium).
+
 ## Build
 
 Needs JDK 17+ and the Android SDK (compile/target 35, min 26).
@@ -26,6 +30,7 @@ Needs JDK 17+ and the Android SDK (compile/target 35, min 26).
 echo "sdk.dir=$ANDROID_HOME" > local.properties
 ./gradlew assembleDebug
 ./gradlew testDebugUnitTest
+./gradlew lintDebug
 ```
 
 Debug APK: `app/build/outputs/apk/debug/app-debug.apk`
