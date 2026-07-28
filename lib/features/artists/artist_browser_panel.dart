@@ -393,7 +393,7 @@ class _FallbackNetworkImageState extends State<_FallbackNetworkImage> {
       headers: _headers,
       gaplessPlayback: true,
       filterQuality: FilterQuality.low,
-      errorBuilder: (_, __, ___) {
+      errorBuilder: (_, error, stackTrace) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) _advance();
         });
