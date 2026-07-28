@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Only user-authored data is backed up. Because these are explicit includes, everything else is
+  excluded automatically, which is what keeps the downloaded preview packs (potentially hundreds
+  of megabytes, and re-downloadable) out of cloud backups.
+-->
+<full-backup-content>
+    <include domain="database" path="nai_user.db" />
+    <include domain="sharedpref" path="." />
+</full-backup-content>

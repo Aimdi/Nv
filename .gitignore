@@ -1,0 +1,16 @@
+*.iml
+.gradle/
+.idea/
+.kotlin/
+build/
+local.properties
+keystore.properties
+*.keystore
+*.jks
+captures/
+.externalNativeBuild/
+.cxx/
+tools/.venv/
+tools/work/
+__pycache__/
+*.pyc
