@@ -95,6 +95,9 @@ soundfonts/
 # ...but product jukebox MIDI under assets/midi/ ships in-repo (like the .kar
 # songs), so un-ignore it. Stray dev/test .mid elsewhere stays ignored.
 !assets/midi/**/*.mid
+# Bundled default soundfont under assets/soundfonts/ also ships in-repo.
+!assets/soundfonts/
+!assets/soundfonts/**/*.sf2
 test_itxt.dart
 EXAMPLEINPAINTED.png
 
