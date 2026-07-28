@@ -193,6 +193,12 @@ class _Feature {
 }
 
 List<_Feature> _getFeatures(AppLocalizations l) => [
+  _Feature('Chip Composer', 'Aimdi weighted chip builder — send tags into the main generator prompt', (ctx) {
+    Navigator.push(ctx, MaterialPageRoute(builder: (_) => const ToolsHubScreen(initialToolId: 'chip_composer')));
+  }),
+  _Feature('Artist Browser', 'Aimdi artist picker with HuggingFace previews — add artist: tags to generate', (ctx) {
+    Navigator.push(ctx, MaterialPageRoute(builder: (_) => const ToolsHubScreen(initialToolId: 'artist_browser')));
+  }),
   _Feature(l.helpFeatureGallery, l.helpFeatureGalleryDesc, (ctx) {
     Navigator.push(ctx, MaterialPageRoute(builder: (_) => const GalleryScreen()));
   }),

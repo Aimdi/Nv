@@ -6,12 +6,13 @@ import '../../../core/prompt/weight_engine.dart';
 import '../../../core/services/nv_enrichment.dart';
 import '../../../core/services/tag_service.dart';
 import '../../../core/theme/theme_extensions.dart';
+import '../../../core/utils/nv_prompt_bridge.dart';
+import '../generation/providers/generation_notifier.dart';
 
 /// Chip-based NovelAI prompt composer (from Aimdi/Nv).
 ///
-/// Builds a weighted prompt as reorderable chips, with offline FTS-style local
-/// suggestions merged with live Danbooru autocomplete. Copy the result into
-/// generation or the NovelAI PWA.
+/// Syncs with the main generator prompt: opens preloaded from it, and can
+/// send/append the composed chips back into generation.
 class ChipComposerPanel extends StatefulWidget {
   const ChipComposerPanel({super.key});
 
@@ -28,7 +29,29 @@ class _ChipComposerPanelState extends State<ChipComposerPanel> {
   bool _artistPrefix = true;
   bool _onlineSearch = true;
   bool _allowNsfw = false;
+  bool _loadedFromMain = false;
   String? _message;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadFromMainPrompt());
+  }
+
+  void _loadFromMainPrompt() {
+    if (!mounted || _loadedFromMain) return;
+    _loadedFromMain = true;
+    final existing = context.read<GenerationNotifier>().promptController.text.trim();
+    if (existing.isEmpty) return;
+    final parsed = WeightEngine.parse(existing);
+    if (parsed.isEmpty) return;
+    setState(() {
+      _chips
+        ..clear()
+        ..addAll(parsed);
+      _message = 'Loaded ${parsed.length} tags from the main prompt';
+    });
+  }
 
   @override
   void dispose() {
@@ -118,9 +141,19 @@ class _ChipComposerPanelState extends State<ChipComposerPanel> {
     if (text.isEmpty) return;
     await Clipboard.setData(ClipboardData(text: text));
     if (!mounted) return;
-    setState(() => _message = 'Prompt copied — paste into NovelAI or the generator');
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(_message!)),
+      const SnackBar(content: Text('Prompt copied')),
+    );
+  }
+
+  void _sendToGenerator({required bool append}) {
+    NvPromptBridge.applyToMainPrompt(
+      context,
+      _rendered,
+      append: append,
+      snackbar: append
+          ? 'Appended chips to the main prompt'
+          : 'Sent chips to the main prompt',
     );
   }
 
@@ -144,10 +177,15 @@ class _ChipComposerPanelState extends State<ChipComposerPanel> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Compose weighted tags as chips, then copy into the generator or NovelAI. '
-                'Earlier tags have more influence.',
+                'Aimdi prompt builder inside Nv. Opens with your current generator '
+                'prompt as chips. Send it back when you are done — earlier tags '
+                'have more influence.',
                 style: TextStyle(color: t.textSecondary, fontSize: t.fontSize(12)),
               ),
+              if (_message != null) ...[
+                const SizedBox(height: 8),
+                Text(_message!, style: TextStyle(color: t.accent, fontSize: t.fontSize(11))),
+              ],
               const SizedBox(height: 16),
               Wrap(
                 spacing: 8,
@@ -172,6 +210,22 @@ class _ChipComposerPanelState extends State<ChipComposerPanel> {
                     label: const Text('NSFW ratings'),
                     selected: _allowNsfw,
                     onSelected: (v) => setState(() => _allowNsfw = v),
+                  ),
+                  ActionChip(
+                    label: const Text('Reload from prompt'),
+                    avatar: const Icon(Icons.sync, size: 16),
+                    onPressed: () {
+                      final existing =
+                          context.read<GenerationNotifier>().promptController.text.trim();
+                      setState(() {
+                        _chips
+                          ..clear()
+                          ..addAll(WeightEngine.parse(existing));
+                        _message = existing.isEmpty
+                            ? 'Main prompt is empty'
+                            : 'Reloaded ${_chips.length} tags from the main prompt';
+                      });
+                    },
                   ),
                 ],
               ),
@@ -218,9 +272,8 @@ class _ChipComposerPanelState extends State<ChipComposerPanel> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   itemCount: _chips.length,
-                  onReorder: (oldIndex, newIndex) {
+                  onReorderItem: (oldIndex, newIndex) {
                     setState(() {
-                      if (newIndex > oldIndex) newIndex -= 1;
                       final item = _chips.removeAt(oldIndex);
                       _chips.insert(newIndex, item);
                     });
@@ -286,24 +339,48 @@ class _ChipComposerPanelState extends State<ChipComposerPanel> {
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(12),
-            child: Row(
+            child: Column(
               children: [
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: _chips.isEmpty ? null : _copy,
-                    icon: const Icon(Icons.copy),
-                    label: const Text('Copy prompt'),
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: _chips.isEmpty ? null : () => _sendToGenerator(append: false),
+                        icon: const Icon(Icons.send),
+                        label: const Text('Send to generator'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        onPressed: _chips.isEmpty ? null : () => _sendToGenerator(append: true),
+                        icon: const Icon(Icons.playlist_add),
+                        label: const Text('Append'),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                OutlinedButton(
-                  onPressed: _chips.isEmpty
-                      ? null
-                      : () => setState(() {
-                            _chips.clear();
-                            _message = null;
-                          }),
-                  child: const Text('Clear'),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _chips.isEmpty ? null : _copy,
+                        icon: const Icon(Icons.copy),
+                        label: const Text('Copy'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    OutlinedButton(
+                      onPressed: _chips.isEmpty
+                          ? null
+                          : () => setState(() {
+                                _chips.clear();
+                                _message = null;
+                              }),
+                      child: const Text('Clear'),
+                    ),
+                  ],
                 ),
               ],
             ),

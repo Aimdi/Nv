@@ -17,9 +17,9 @@ Android application id: `com.aimdi.nv`
 - Gallery, packs (`.vpack`), wildcards, presets, styles, themes
 - On-device ML (BG remove / upscale / SAM), director tools, EN/JA/ZH
 
-### From Aimdi/Nv (Tools hub)
-- **Chip Composer** — reorderable weighted chips (`{}` / `[]` / `w::tag::`, `artist:`), local + live Danbooru suggestions, one-tap copy  
-- **Artist Browser** — offline artist tags with on-demand SFW HuggingFace previews (`novelai-anime-v3-artist-comparison`)
+### From Aimdi (wired into the generator)
+- **Chip Composer** — app bar **CHIPS**, prompt-area shortcut, or **Tools → NV CHIPS**. Opens with your current main prompt as reorderable weighted chips (`{}` / `[]` / `w::tag::`, `artist:`), local + live Danbooru suggestions. **Send to generator** / **Append** writes straight back into the home prompt.
+- **Artist Browser** — app bar **ARTISTS**, prompt-area shortcut, or **Tools → NV ARTISTS**. Offline artist tags with on-demand SFW HuggingFace previews; long-press or **Add to generator prompt** appends `artist:name` to the main prompt.
 
 ## Requirements
 
@@ -42,7 +42,8 @@ flutter test
 
 1. Launch Nv  
 2. **Tools → Settings** → paste your NovelAI API key  
-3. Generate on the home screen, or open **Tools → Chip Composer / Artist Browser** for prompt work
+3. Generate on the home screen  
+4. Use **CHIPS** / **ARTISTS** in the app bar (or the Aimdi row above the prompt) to compose tags and send them into generation
 
 ## Attribution
 

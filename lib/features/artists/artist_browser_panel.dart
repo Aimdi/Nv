@@ -6,11 +6,11 @@ import '../../../core/prompt/weight_engine.dart';
 import '../../../core/services/nv_enrichment.dart';
 import '../../../core/services/tag_service.dart';
 import '../../../core/theme/theme_extensions.dart';
+import '../../../core/utils/nv_prompt_bridge.dart';
 
 /// Artist browser with on-demand HuggingFace NovelAI v3 preview samples.
 ///
-/// Uses the offline artist tags already loaded by [TagService] and loads
-/// SFW preview images from the public HF dataset (cached by Flutter/ImageCache).
+/// Adds selected artists directly into the main generator prompt.
 class ArtistBrowserPanel extends StatefulWidget {
   const ArtistBrowserPanel({super.key});
 
@@ -47,15 +47,30 @@ class _ArtistBrowserPanelState extends State<ArtistBrowserPanel> {
     return list.take(200).toList();
   }
 
-  Future<void> _copyArtist(DanbooruTag artist) async {
-    final rendered = WeightEngine.renderEntry(
+  String? _renderArtist(DanbooruTag artist) {
+    return WeightEngine.renderEntry(
       TagChip(tag: artist.tag, kind: TagKind.artist),
     );
+  }
+
+  Future<void> _copyArtist(DanbooruTag artist) async {
+    final rendered = _renderArtist(artist);
     if (rendered == null) return;
     await Clipboard.setData(ClipboardData(text: rendered));
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Copied $rendered')),
+    );
+  }
+
+  void _addToPrompt(DanbooruTag artist) {
+    final rendered = _renderArtist(artist);
+    if (rendered == null) return;
+    NvPromptBridge.applyToMainPrompt(
+      context,
+      rendered,
+      append: true,
+      snackbar: 'Added $rendered to the main prompt',
     );
   }
 
@@ -83,8 +98,8 @@ class _ArtistBrowserPanelState extends State<ArtistBrowserPanel> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Browse offline artist tags with optional HuggingFace SFW previews. '
-                'Long-press a card to copy artist:name.',
+                'Aimdi artist picker with HuggingFace SFW previews. Tap a card '
+                'for details, or long-press to add artist:name to the generator.',
                 style: TextStyle(color: t.secondaryText, fontSize: t.fontSize(12)),
               ),
               const SizedBox(height: 12),
@@ -141,7 +156,7 @@ class _ArtistBrowserPanelState extends State<ArtistBrowserPanel> {
                 artist: artist,
                 onlinePreviews: _onlinePreviews,
                 onTap: () => _showDetail(artist),
-                onLongPress: () => _copyArtist(artist),
+                onLongPress: () => _addToPrompt(artist),
               );
             },
           ),
@@ -180,6 +195,15 @@ class _ArtistBrowserPanelState extends State<ArtistBrowserPanel> {
                 ),
               const SizedBox(height: 12),
               FilledButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _addToPrompt(artist);
+                },
+                icon: const Icon(Icons.add),
+                label: const Text('Add to generator prompt'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
                 onPressed: () {
                   Navigator.pop(context);
                   _copyArtist(artist);
@@ -243,7 +267,7 @@ class _ArtistCard extends StatelessWidget {
                     style: TextStyle(fontSize: t.fontSize(12), fontWeight: FontWeight.w600),
                   ),
                   Text(
-                    '${artist.count} posts',
+                    '${artist.count} posts · long-press to add',
                     style: TextStyle(fontSize: t.fontSize(10), color: t.secondaryText),
                   ),
                 ],
