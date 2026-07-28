@@ -51,12 +51,12 @@ void main() {
   });
 
   group('ArtistPreviewUrls', () {
-    test('candidates try primary then fallback', () {
+    test('candidates try primary then fallback encodings', () {
       final urls = ArtistPreviewUrls.candidates('hammer_(sunset_beach)');
-      expect(urls, hasLength(2));
+      expect(urls.length, greaterThanOrEqualTo(2));
       expect(urls[0], contains('/images/1_10000/'));
-      expect(urls[1], contains('/images/2_5000/'));
-      expect(urls[0], endsWith('.jpg'));
+      expect(urls.any((u) => u.contains('/images/2_5000/')), isTrue);
+      expect(urls.every((u) => u.endsWith('.jpg')), isTrue);
     });
   });
 }
