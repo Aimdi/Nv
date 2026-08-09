@@ -140,7 +140,7 @@ class _ArtistBrowserPanelState extends State<ArtistBrowserPanel> {
                   ),
                   ActionChip(
                     avatar: const Icon(Icons.casino, size: 16),
-                    label: const Text('+2–3 to prompt'),
+                    label: const Text('Mix artists'),
                     onPressed: () => NvPromptBridge.addRandomArtists(context),
                   ),
                 ],
