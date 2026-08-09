@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../features/generation/providers/generation_notifier.dart';
 import '../../features/tools/tools_hub_screen.dart';
-import '../prompt/weight_engine.dart';
+import '../prompt/artist_mix_engine.dart';
 import '../services/tag_service.dart';
 
 /// Bridges Aimdi chip/artist tools into the NAIWeaver generation prompt.
@@ -65,62 +65,46 @@ class NvPromptBridge {
     }
   }
 
-  /// Instantly append 2–3 random popular artists to the generator prompt.
-  static void addRandomArtists(
-    BuildContext context, {
-    int minCount = 2,
-    int maxCount = 3,
-  }) {
-    assert(minCount >= 1 && maxCount >= minCount);
+  /// Replace previous artist tags with a fresh weighted mix.
+  ///
+  /// Keeps characters / general tags. Always emphasizes at least one artist
+  /// (`1.2–1.4:: drawn by …::`, `{{…}}`, etc.).
+  static void addRandomArtists(BuildContext context) {
     final tagService = context.read<TagService>();
     final gen = context.read<GenerationNotifier>();
-    final existing = gen.promptController.text.toLowerCase();
 
-    final pool = tagService.tags
+    final artistTags = tagService.tags
         .where((t) => t.typeName.toLowerCase() == 'artist')
         .where((t) => t.tag.toLowerCase() != 'banned_artist')
         .where((t) => t.count >= 200)
         .toList()
       ..sort((a, b) => b.count.compareTo(a.count));
 
-    if (pool.isEmpty) {
+    if (artistTags.isEmpty) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
         const SnackBar(content: Text('No artist tags loaded yet')),
       );
       return;
     }
 
-    final rng = Random();
-    final want = minCount + rng.nextInt(maxCount - minCount + 1);
-    final candidates = pool.take(1000).toList()..shuffle(rng);
-    final rendered = <String>[];
+    final characterNames = tagService.tags
+        .where((t) => t.typeName.toLowerCase() == 'character')
+        .map((t) => t.tag)
+        .toSet();
+    final artistNames = artistTags.map((t) => t.tag).toSet();
+    final pool = artistTags.take(1000).map((t) => t.tag).toList();
 
-    for (final artist in candidates) {
-      final piece = WeightEngine.renderEntry(
-        TagChip(tag: artist.tag, kind: TagKind.artist),
-      );
-      if (piece == null || piece.isEmpty) continue;
+    final next = ArtistMixEngine.replaceArtistsInPrompt(
+      gen.promptController.text,
+      artistPool: pool,
+      artistNames: artistNames,
+      characterNames: characterNames,
+      random: Random(),
+    );
 
-      final needle = artist.tag.toLowerCase();
-      final spaced = needle.replaceAll('_', ' ');
-      if (existing.contains(needle) || existing.contains(spaced)) continue;
-      if (rendered.any((r) => r.toLowerCase().contains(needle))) continue;
-
-      rendered.add(piece);
-      if (rendered.length >= want) break;
-    }
-
-    if (rendered.isEmpty) {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-        const SnackBar(content: Text('Could not pick random artists')),
-      );
-      return;
-    }
-
-    appendInPlace(
-      context,
-      rendered.join(', '),
-      snackbar: 'Added ${rendered.length} random artists',
+    _writePrompt(context, next, append: false);
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      const SnackBar(content: Text('Replaced artists with a new weighted mix')),
     );
   }
 

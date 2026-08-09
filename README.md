@@ -20,6 +20,7 @@ Android application id: `com.aimdi.nv`
 ### From Aimdi (wired into the generator)
 - **Chip Composer** — app bar **CHIPS**, prompt-area shortcut, or **Tools → NV CHIPS**. Opens with your current main prompt as reorderable weighted chips (`{}` / `[]` / `w::tag::`, `artist:`), local + live Danbooru suggestions. **Send to generator** / **Append** writes straight back into the home prompt.
 - **Artist Browser** — app bar **ARTISTS**, prompt-area shortcut, or **Tools → NV ARTISTS**. Offline artist tags with on-demand SFW HuggingFace previews; long-press or **Add to generator prompt** appends `artist:name` to the main prompt.
+- **MIX ARTISTS** — one tap replaces previous artist tags (keeps characters) with a weighted stack like `1.3:: drawn by …::, {a}, [b,c], [d]`.
 
 ## Requirements
 

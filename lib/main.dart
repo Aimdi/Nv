@@ -1301,7 +1301,7 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
                   TextButton.icon(
                     onPressed: () => NvPromptBridge.addRandomArtists(context),
                     icon: Icon(Icons.casino, size: mobile ? 14 : 12, color: t.accent),
-                    label: Text('+2–3 ARTISTS', style: style),
+                    label: Text('MIX ARTISTS', style: style),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
                       minimumSize: Size.zero,
