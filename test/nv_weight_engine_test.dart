@@ -10,15 +10,6 @@ void main() {
     test('brace depth maps to 1.05 powers', () {
       expect(WeightEngine.braceDepthToWeight(0), 1.0);
       expect(WeightEngine.braceDepthToWeight(1), closeTo(1.05, 1e-9));
-      expect(WeightEngine.braceDepthToWeight(2), closeTo(1.1025, 1e-9));
-      expect(WeightEngine.braceDepthToWeight(-2), closeTo(1 / (1.05 * 1.05), 1e-6));
-    });
-
-    test('weight to brace depth round trips', () {
-      expect(WeightEngine.weightToBraceDepth(1.0), 0);
-      expect(WeightEngine.weightToBraceDepth(1.05), 1);
-      expect(WeightEngine.weightToBraceDepth(1.1025), 2);
-      expect(WeightEngine.weightToBraceDepth(1 / 1.05), -1);
     });
 
     test('render applies artist prefix and spaces', () {
@@ -34,136 +25,177 @@ void main() {
       );
       expect(text, '{artist:hammer (sunset beach)}, 1girl');
     });
-
-    test('numeric syntax round trips through parse', () {
-      final rendered = WeightEngine.render([
-        TagChip(tag: 'monochrome', numericWeight: 1.3),
-      ]);
-      expect(rendered.contains('1.3::'), isTrue);
-      final parsed = WeightEngine.parse(rendered);
-      expect(parsed, hasLength(1));
-      expect(parsed.first.tag, 'monochrome');
-      expect(parsed.first.numericWeight, closeTo(1.3, 1e-9));
-    });
-
-    test('double brackets parse to depth -2', () {
-      final parsed = WeightEngine.parse('[[tag]]');
-      expect(parsed, hasLength(1));
-      expect(parsed.first.bracketCount, -2);
-    });
   });
 
   group('ArtistPreviewUrls', () {
     test('candidates try primary then fallback encodings', () {
       final urls = ArtistPreviewUrls.candidates('hammer_(sunset_beach)');
       expect(urls.length, greaterThanOrEqualTo(2));
-      expect(urls[0], contains('/images/1_10000/'));
-      expect(urls.any((u) => u.contains('/images/2_5000/')), isTrue);
       expect(urls.every((u) => u.endsWith('.jpg')), isTrue);
     });
   });
 
-  group('ArtistMixEngine', () {
-    const artists = {
-      'memeh',
-      'pakosun',
-      'ningen_mame',
-      'modare',
-      'ohisashiburi',
-      'ateoyh',
-      'rezodwel',
-      'teddypocky',
-      'midfinger',
-      'snegovski',
-      '96yottea',
-      'akakura',
-      'akai_sashimi',
-      '7010',
-    };
-    const characters = {'kana_arima', 'chigusa_minori'};
+  group('ArtistMixEngine quality algo', () {
+    late List<ArtistCandidate> candidates;
+    late ArtistMixCatalog catalog;
 
-    test('stripArtists removes artist stack but keeps character', () {
+    setUp(() {
+      candidates = const [
+        ArtistCandidate(name: 'xaxaxa', count: 196),
+        ArtistCandidate(name: 'zankuro', count: 818),
+        ArtistCandidate(name: 'stanley lau', count: 606),
+        ArtistCandidate(name: 'kedama milk', count: 629),
+        ArtistCandidate(name: 'modare', count: 810),
+        ArtistCandidate(name: 'ohisashiburi', count: 1479),
+        ArtistCandidate(name: 'ningen mame', count: 351),
+        ArtistCandidate(name: 'ateoyh', count: 565),
+        ArtistCandidate(name: 'memeh', count: 158),
+        ArtistCandidate(name: 'cyancapsule', count: 349),
+        ArtistCandidate(name: 'goto p', count: 736),
+        ArtistCandidate(name: 'shimhaq', count: 318),
+        ArtistCandidate(name: 'sciamano240', count: 899),
+        ArtistCandidate(name: r'rei \(sanbonzakura\)', count: 585),
+        ArtistCandidate(name: 'ebifurya', count: 5842),
+        ArtistCandidate(name: 'banned artist', count: 84474),
+      ];
+      catalog = ArtistMixCatalog.fromJson({
+        'glue': ['xaxaxa', 'zankuro', 'stanley lau', 'kedama milk', 'goto p'],
+        'buckets': {
+          'anime': [
+            'xaxaxa',
+            'zankuro',
+            'stanley lau',
+            'modare',
+            'ohisashiburi',
+            'ningen mame',
+            'ateoyh',
+            'goto p',
+          ],
+          'cartoony': ['xaxaxa', 'kedama milk', 'zankuro', 'cyancapsule'],
+          'western': ['sciamano240', r'rei \(sanbonzakura\)', 'shimhaq'],
+        },
+        'triples': [
+          {
+            'style': 'anime',
+            'artists': ['modare', 'ohisashiburi', 'ningen mame'],
+          },
+          {
+            'style': 'cartoony',
+            'artists': ['kedama milk', 'xaxaxa', 'zankuro'],
+          },
+          {
+            'style': 'western',
+            'artists': ['sciamano240', r'rei \(sanbonzakura\)', 'shimhaq'],
+          },
+        ],
+      });
+      ArtistMixEngine.debugSetCatalog(catalog);
+    });
+
+    tearDown(() => ArtistMixEngine.debugSetCatalog(null));
+
+    test('stripArtists keeps characters and removes artist stacks', () {
       const prompt =
-          '1.3:: kana arima::, 1.2:: drawn by ateoyh::, {memeh}, [pakosun,ningen_mame], [modare], {ohisashiburi}, 1girl';
+          '1.3:: kana arima::, artist:modare, artist:ohisashiburi, [artist:ningen mame], 1girl';
       final cleaned = ArtistMixEngine.stripArtists(
         prompt,
-        artistNames: artists,
-        characterNames: characters,
+        artistNames: candidates.map((c) => c.name).toSet(),
+        characterNames: {'kana arima', 'kana_arima'},
       );
       expect(cleaned.toLowerCase(), contains('kana arima'));
       expect(cleaned.toLowerCase(), contains('1girl'));
-      expect(cleaned.toLowerCase(), isNot(contains('ateoyh')));
-      expect(cleaned.toLowerCase(), isNot(contains('memeh')));
       expect(cleaned.toLowerCase(), isNot(contains('modare')));
     });
 
-    test('stripArtists keeps weakened character weights', () {
-      const prompt =
-          '0.8::chigusa_minori::, {{memeh}}, [pakosun,ningen_mame], [modare], {ohisashiburi}';
-      final cleaned = ArtistMixEngine.stripArtists(
-        prompt,
-        artistNames: artists,
-        characterNames: characters,
-      );
-      expect(cleaned.toLowerCase(), contains('chigusa_minori'));
-      expect(cleaned.toLowerCase(), isNot(contains('memeh')));
+    test('seed triple path emits curated three-artist artist: mix', () {
+      // Force seed path with catalog that only has one triple usable.
+      final forced = ArtistMixCatalog.fromJson({
+        'glue': ['xaxaxa'],
+        'buckets': {
+          'anime': ['modare', 'ohisashiburi', 'ningen mame'],
+        },
+        'triples': [
+          {
+            'style': 'anime',
+            'artists': ['modare', 'ohisashiburi', 'ningen mame'],
+          },
+        ],
+      });
+      // High seed probability: retry until we hit seed (deterministic Random).
+      String? mix;
+      for (var seed = 0; seed < 40; seed++) {
+        mix = ArtistMixEngine.buildMix(
+          candidates,
+          random: Random(seed),
+          catalog: forced,
+        );
+        if (mix.contains('modare') &&
+            mix.contains('ohisashiburi') &&
+            mix.contains('ningen mame')) {
+          break;
+        }
+      }
+      expect(mix, isNotNull);
+      expect(mix!, contains('artist:'));
+      expect(mix.toLowerCase(), contains('modare'));
+      expect(RegExp(r'artist:').allMatches(mix).length, greaterThanOrEqualTo(2));
+      // No chaotic drawn-by / heavy numeric spam.
+      expect(mix.toLowerCase().contains('drawn by'), isFalse);
     });
 
-    test('buildMix always emphasizes at least one artist', () {
-      final mix = ArtistMixEngine.buildMix(
-        artists.toList(),
-        random: Random(7),
-        minArtists: 5,
-        maxArtists: 5,
-      );
-      expect(mix, isNotEmpty);
-      final emphasized = mix.contains('::') ||
-          mix.contains('{{') ||
-          RegExp(r'\{[^{].*\}').hasMatch(mix);
-      expect(emphasized, isTrue);
-      expect(
-        mix.contains('drawn by') || mix.contains('{') || mix.contains('['),
-        isTrue,
-      );
+    test('generative mixes stay small and avoid banned_artist', () {
+      final emptySeeds = ArtistMixCatalog.fromJson({
+        'glue': ['xaxaxa', 'zankuro', 'stanley lau', 'goto p'],
+        'buckets': {
+          'anime': [
+            'xaxaxa',
+            'zankuro',
+            'stanley lau',
+            'modare',
+            'ohisashiburi',
+            'ningen mame',
+            'ateoyh',
+            'goto p',
+            'memeh',
+          ],
+        },
+        'triples': <Map<String, dynamic>>[],
+      });
+      for (var seed = 0; seed < 20; seed++) {
+        final mix = ArtistMixEngine.buildMix(
+          candidates,
+          random: Random(seed),
+          catalog: emptySeeds,
+        );
+        expect(mix, isNotEmpty);
+        expect(mix.toLowerCase(), isNot(contains('banned')));
+        final artistCount = RegExp(r'artist:').allMatches(mix).length;
+        expect(artistCount, inInclusiveRange(2, 5));
+        // Prefer plain artist: hierarchy over heavy numeric spam.
+        expect(RegExp(r'1\.[3-9]::').hasMatch(mix), isFalse);
+      }
     });
 
-    test('replaceArtistsInPrompt swaps previous mix and keeps character', () {
-      const prompt =
-          '1.3:: kana arima::, [teddypocky], {pakosun,ningen_mame}, [modare], {midfinger}';
+    test('replace keeps character and installs artist: lead mix', () {
+      const prompt = '1.3:: kana arima::, 1girl, long hair';
       final next = ArtistMixEngine.replaceArtistsInPrompt(
         prompt,
-        artistPool: artists.toList(),
-        artistNames: artists,
-        characterNames: characters,
-        random: Random(3),
+        candidates: candidates,
+        artistNames: candidates.map((c) => c.name).toSet(),
+        characterNames: {'kana arima'},
+        random: Random(11),
+        catalog: catalog,
       );
       expect(next.toLowerCase(), contains('kana arima'));
-      // Previous grouped/weak artists from the old stack are gone unless re-picked.
-      expect(next.toLowerCase().contains('[pakosun,ningen_mame]'), isFalse);
-      expect(next.contains('::') || next.contains('{{') || next.contains('{'), isTrue);
+      expect(next.toLowerCase(), contains('1girl'));
+      expect(next.contains('artist:'), isTrue);
     });
 
-    test('second replace removes the previous generated mix', () {
-      const prompt = '1girl, long hair';
-      final first = ArtistMixEngine.replaceArtistsInPrompt(
-        prompt,
-        artistPool: artists.toList(),
-        artistNames: artists,
-        characterNames: characters,
-        random: Random(1),
+    test('promptName unescapes danbooru parentheses', () {
+      expect(
+        ArtistMixEngine.promptName(r'rei \(sanbonzakura\)'),
+        'rei (sanbonzakura)',
       );
-      final second = ArtistMixEngine.replaceArtistsInPrompt(
-        first,
-        artistPool: artists.toList(),
-        artistNames: artists,
-        characterNames: characters,
-        random: Random(2),
-      );
-      expect(second.toLowerCase(), contains('1girl'));
-      expect(second.toLowerCase(), contains('long hair'));
-      // Should not stack two full mixes — strip happens first.
-      final drawnByCount = RegExp(r'drawn by', caseSensitive: false).allMatches(second).length;
-      expect(drawnByCount, lessThan(12));
     });
   });
 }

@@ -12,6 +12,7 @@ import '../services/tag_service.dart';
 class NvPromptBridge {
   static const chipComposerToolId = 'chip_composer';
   static const artistBrowserToolId = 'artist_browser';
+  static bool _catalogLoading = false;
 
   static Future<void> openChipComposer(BuildContext context) {
     return Navigator.of(context).push(
@@ -27,6 +28,17 @@ class NvPromptBridge {
         builder: (_) => const ToolsHubScreen(initialToolId: artistBrowserToolId),
       ),
     );
+  }
+
+  /// Ensure curated mix catalog is loaded (safe to call repeatedly).
+  static Future<void> ensureMixCatalog() async {
+    if (_catalogLoading) return;
+    _catalogLoading = true;
+    try {
+      await ArtistMixEngine.loadCatalog();
+    } finally {
+      _catalogLoading = false;
+    }
   }
 
   /// Replace or append [text] on the main positive prompt, then return home.
@@ -65,20 +77,22 @@ class NvPromptBridge {
     }
   }
 
-  /// Replace previous artist tags with a fresh weighted mix.
+  /// Replace previous artist tags with a quality-aware mix.
   ///
-  /// Keeps characters / general tags. Always emphasizes at least one artist
-  /// (`1.2–1.4:: drawn by …::`, `{{…}}`, etc.).
+  /// Keeps characters. Uses curated seed triples + mid-band log sampling
+  /// instead of shuffling top post-count artists.
   static void addRandomArtists(BuildContext context) {
+    ensureMixCatalog();
     final tagService = context.read<TagService>();
     final gen = context.read<GenerationNotifier>();
 
     final artistTags = tagService.tags
         .where((t) => t.typeName.toLowerCase() == 'artist')
-        .where((t) => t.tag.toLowerCase() != 'banned_artist')
-        .where((t) => t.count >= 200)
-        .toList()
-      ..sort((a, b) => b.count.compareTo(a.count));
+        .where((t) {
+          final n = t.tag.toLowerCase().replaceAll('_', ' ');
+          return n != 'banned artist' && n != 'banned_artist';
+        })
+        .toList();
 
     if (artistTags.isEmpty) {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(
@@ -92,11 +106,13 @@ class NvPromptBridge {
         .map((t) => t.tag)
         .toSet();
     final artistNames = artistTags.map((t) => t.tag).toSet();
-    final pool = artistTags.take(1000).map((t) => t.tag).toList();
+    final candidates = artistTags
+        .map((t) => ArtistCandidate(name: t.tag, count: t.count))
+        .toList();
 
     final next = ArtistMixEngine.replaceArtistsInPrompt(
       gen.promptController.text,
-      artistPool: pool,
+      candidates: candidates,
       artistNames: artistNames,
       characterNames: characterNames,
       random: Random(),
@@ -104,7 +120,7 @@ class NvPromptBridge {
 
     _writePrompt(context, next, append: false);
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      const SnackBar(content: Text('Replaced artists with a new weighted mix')),
+      const SnackBar(content: Text('Applied a quality artist mix')),
     );
   }
 
