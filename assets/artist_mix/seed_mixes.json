@@ -1,0 +1,405 @@
+{
+  "version": 1,
+  "source": "Community coolv3-style triples + mid-band generative mixer",
+  "glue": [
+    "xaxaxa",
+    "goto p",
+    "zankuro",
+    "stanley lau",
+    "shimhaq",
+    "kedama milk",
+    "alkemanubis",
+    "cyancapsule",
+    "yoon cook",
+    "rei \\(sanbonzakura\\)",
+    "gomennasai",
+    "hungry clicker",
+    "shigatake",
+    "kelvin hiu",
+    "tsukushi akihito",
+    "koto inari",
+    "noeyebrow \\(mauve\\)",
+    "hero neisan",
+    "paloma piquet",
+    "sciamano240",
+    "incase",
+    "cutesexyrobutts",
+    "modare",
+    "ohisashiburi",
+    "memeh",
+    "ateoyh",
+    "ningen mame",
+    "cirenk",
+    "camonome",
+    "guweiz",
+    "po-ju",
+    "crumbles",
+    "shexyo",
+    "wlop",
+    "ask \\(askzy\\)",
+    "ciloranko",
+    "gashi-gashi",
+    "porforever",
+    "hxxg",
+    "bluethebone",
+    "onono imoko"
+  ],
+  "buckets": {
+    "western": [
+      "rei \\(sanbonzakura\\)",
+      "sciamano240",
+      "shimhaq"
+    ],
+    "cartoony": [
+      "alex ahad",
+      "alkemanubis",
+      "bartolomeobari",
+      "bellhenge",
+      "camonome",
+      "crumbles",
+      "cutesexyrobutts",
+      "cyancapsule",
+      "demizu posuka",
+      "doppel \\(bonnypir\\)",
+      "garouma",
+      "gashi-gashi",
+      "gogalking",
+      "gomennasai",
+      "hero neisan",
+      "kedama milk",
+      "kelvin hiu",
+      "koto inari",
+      "kuroboshi kouhaku",
+      "logan cure",
+      "paloma piquet",
+      "phantom ix row",
+      "pikaole",
+      "porforever",
+      "shigatake",
+      "tarakanovich",
+      "tsukushi akihito",
+      "xaxaxa",
+      "yoon cook",
+      "zankuro",
+      "zippo \\(3756c\\)"
+    ],
+    "anime": [
+      "aaaa \\(quad-a\\)",
+      "akadako",
+      "alkemanubis",
+      "ask \\(askzy\\)",
+      "ateoyh",
+      "atte nanakusa",
+      "bluethebone",
+      "branch \\(blackrabbits\\)",
+      "ciloranko",
+      "cirenk",
+      "cyancapsule",
+      "free style \\(yohan1754\\)",
+      "gomennasai",
+      "goto p",
+      "guweiz",
+      "hero neisan",
+      "hungry clicker",
+      "hxxg",
+      "ina \\(gokihoihoi\\)",
+      "incase",
+      "kase daiki",
+      "kedama milk",
+      "kelvin hiu",
+      "makimura shunsuke",
+      "mashuu \\(neko no oyashiro\\)",
+      "memeh",
+      "modare",
+      "ningen mame",
+      "noeyebrow \\(mauve\\)",
+      "ohisashiburi",
+      "onono imoko",
+      "osakana \\(denpa yun'yun\\)",
+      "po-ju",
+      "redjuice",
+      "rei \\(sanbonzakura\\)",
+      "sakurabe notos",
+      "shexyo",
+      "shirow masamune",
+      "stanley lau",
+      "wlop",
+      "xaxaxa",
+      "yoon cook"
+    ]
+  },
+  "triples": [
+    {
+      "style": "western",
+      "artists": [
+        "sciamano240",
+        "rei \\(sanbonzakura\\)",
+        "shimhaq"
+      ]
+    },
+    {
+      "style": "cartoony",
+      "artists": [
+        "kelvin hiu",
+        "xaxaxa",
+        "kedama milk"
+      ]
+    },
+    {
+      "style": "cartoony",
+      "artists": [
+        "tsukushi akihito",
+        "alkemanubis",
+        "xaxaxa"
+      ]
+    },
+    {
+      "style": "cartoony",
+      "artists": [
+        "camonome",
+        "koto inari",
+        "xaxaxa"
+      ]
+    },
+    {
+      "style": "cartoony",
+      "artists": [
+        "garouma",
+        "bellhenge",
+        "pikaole"
+      ]
+    },
+    {
+      "style": "cartoony",
+      "artists": [
+        "koto inari",
+        "gashi-gashi",
+        "bartolomeobari"
+      ]
+    },
+    {
+      "style": "cartoony",
+      "artists": [
+        "gomennasai",
+        "zankuro",
+        "koto inari"
+      ]
+    },
+    {
+      "style": "cartoony",
+      "artists": [
+        "doppel \\(bonnypir\\)",
+        "tarakanovich",
+        "hero neisan"
+      ]
+    },
+    {
+      "style": "cartoony",
+      "artists": [
+        "zankuro",
+        "shigatake",
+        "gogalking"
+      ]
+    },
+    {
+      "style": "cartoony",
+      "artists": [
+        "demizu posuka",
+        "shigatake",
+        "gogalking"
+      ]
+    },
+    {
+      "style": "cartoony",
+      "artists": [
+        "cyancapsule",
+        "paloma piquet",
+        "gogalking"
+      ]
+    },
+    {
+      "style": "cartoony",
+      "artists": [
+        "phantom ix row",
+        "logan cure",
+        "yoon cook"
+      ]
+    },
+    {
+      "style": "cartoony",
+      "artists": [
+        "porforever",
+        "kuroboshi kouhaku",
+        "zippo \\(3756c\\)"
+      ]
+    },
+    {
+      "style": "cartoony",
+      "artists": [
+        "paloma piquet",
+        "tsukushi akihito",
+        "alex ahad"
+      ]
+    },
+    {
+      "style": "cartoony",
+      "artists": [
+        "yoon cook",
+        "zankuro",
+        "kedama milk"
+      ]
+    },
+    {
+      "style": "cartoony",
+      "artists": [
+        "zankuro",
+        "cutesexyrobutts",
+        "crumbles"
+      ]
+    },
+    {
+      "style": "anime",
+      "artists": [
+        "ina \\(gokihoihoi\\)",
+        "rei \\(sanbonzakura\\)",
+        "makimura shunsuke"
+      ]
+    },
+    {
+      "style": "anime",
+      "artists": [
+        "xaxaxa",
+        "incase",
+        "hungry clicker"
+      ]
+    },
+    {
+      "style": "anime",
+      "artists": [
+        "akadako",
+        "mashuu \\(neko no oyashiro\\)",
+        "po-ju"
+      ]
+    },
+    {
+      "style": "anime",
+      "artists": [
+        "free style \\(yohan1754\\)",
+        "alkemanubis",
+        "stanley lau"
+      ]
+    },
+    {
+      "style": "anime",
+      "artists": [
+        "guweiz",
+        "alkemanubis",
+        "po-ju"
+      ]
+    },
+    {
+      "style": "anime",
+      "artists": [
+        "cyancapsule",
+        "onono imoko",
+        "stanley lau"
+      ]
+    },
+    {
+      "style": "anime",
+      "artists": [
+        "hungry clicker",
+        "bluethebone",
+        "stanley lau"
+      ]
+    },
+    {
+      "style": "anime",
+      "artists": [
+        "gomennasai",
+        "hero neisan",
+        "stanley lau"
+      ]
+    },
+    {
+      "style": "anime",
+      "artists": [
+        "atte nanakusa",
+        "kedama milk",
+        "stanley lau"
+      ]
+    },
+    {
+      "style": "anime",
+      "artists": [
+        "branch \\(blackrabbits\\)",
+        "cyancapsule",
+        "osakana \\(denpa yun'yun\\)"
+      ]
+    },
+    {
+      "style": "anime",
+      "artists": [
+        "yoon cook",
+        "aaaa \\(quad-a\\)",
+        "stanley lau"
+      ]
+    },
+    {
+      "style": "anime",
+      "artists": [
+        "rei \\(sanbonzakura\\)",
+        "stanley lau",
+        "noeyebrow \\(mauve\\)"
+      ]
+    },
+    {
+      "style": "anime",
+      "artists": [
+        "kelvin hiu",
+        "sakurabe notos",
+        "stanley lau"
+      ]
+    },
+    {
+      "style": "anime",
+      "artists": [
+        "shirow masamune",
+        "hxxg",
+        "kase daiki"
+      ]
+    },
+    {
+      "style": "anime",
+      "artists": [
+        "redjuice",
+        "noeyebrow \\(mauve\\)",
+        "xaxaxa"
+      ]
+    },
+    {
+      "style": "anime",
+      "artists": [
+        "modare",
+        "ohisashiburi",
+        "ningen mame"
+      ]
+    },
+    {
+      "style": "anime",
+      "artists": [
+        "ateoyh",
+        "memeh",
+        "modare"
+      ]
+    },
+    {
+      "style": "anime",
+      "artists": [
+        "ciloranko",
+        "ask \\(askzy\\)",
+        "wlop"
+      ]
+    }
+  ]
+}

@@ -1,13 +1,24 @@
-import 'dart:math';
+import 'dart:convert';
+import 'dart:math' as math;
 
-/// Builds and replaces NovelAI-style artist stacks used by the Aimdi random
-/// mix button — the brace / `drawn by` / numeric style people paste by hand.
+import 'package:flutter/services.dart' show rootBundle;
+
+/// Quality-aware NovelAI artist mixer.
 ///
-/// Example outputs:
-/// - `1.3:: drawn by ateoyh::, {memeh}, [pakosun,ningen_mame], [modare], {ohisashiburi}`
-/// - `{drawn by 96yottea}, [drawn by akakura], drawn by akai sashimi, [7010]`
+/// Why the old mixer felt terrible: it shuffled the top-1000 by post count into
+/// 4–7 heavily weighted `drawn by` tags. Community-good mixes are usually
+/// **3 lightly weighted, style-compatible artists**, often mid-count mixers
+/// (not mega-popular generic tags).
+///
+/// Algorithm:
+/// 1. ~40% emit a curated seed triple (coolv3-style).
+/// 2. Otherwise pick a style bucket, one lead + 2 supports from mid-count bands
+///    with log(count) sampling and a glue/mixer bias.
+/// 3. Format mostly plain `artist:name` with mild optional lead emphasis.
 class ArtistMixEngine {
   ArtistMixEngine._();
+
+  static ArtistMixCatalog? _catalog;
 
   static final _drawnBy = RegExp(
     r'^\s*(?:artist\s*:|drawn\s+by\s+)\s*(.+?)\s*$',
@@ -17,6 +28,28 @@ class ArtistMixEngine {
     r'^\s*(-?\d+(?:\.\d+)?)\s*::\s*(.*?)\s*::\s*$',
   );
   static final _outerBraces = RegExp(r'^[\{\[]+(.*?)[\}\]]+$');
+
+  /// Load bundled seed triples / glue / buckets (call once at startup or lazily).
+  static Future<void> loadCatalog({
+    String assetPath = 'assets/artist_mix/seed_mixes.json',
+  }) async {
+    if (_catalog != null) return;
+    try {
+      final raw = await rootBundle.loadString(assetPath);
+      _catalog = ArtistMixCatalog.fromJson(
+        jsonDecode(raw) as Map<String, dynamic>,
+      );
+    } catch (_) {
+      _catalog = ArtistMixCatalog.empty();
+    }
+  }
+
+  /// Inject catalog for tests.
+  static void debugSetCatalog(ArtistMixCatalog? catalog) {
+    _catalog = catalog;
+  }
+
+  static ArtistMixCatalog get catalog => _catalog ?? ArtistMixCatalog.empty();
 
   /// Strip artist-like segments from [prompt], keeping characters / general tags.
   static String stripArtists(
@@ -38,43 +71,234 @@ class ArtistMixEngine {
     return kept.where((s) => s.isNotEmpty).join(', ');
   }
 
-  /// Build a fresh weighted artist mix. Always emphasizes at least one artist.
+  /// Build a quality mix from scored artist candidates.
   static String buildMix(
-    List<String> artistTags, {
-    Random? random,
-    int minArtists = 4,
-    int maxArtists = 7,
+    List<ArtistCandidate> candidates, {
+    math.Random? random,
+    ArtistMixCatalog? catalog,
   }) {
-    if (artistTags.isEmpty) return '';
-    final rng = random ?? Random();
-    final want = (minArtists + rng.nextInt(maxArtists - minArtists + 1))
-        .clamp(1, artistTags.length);
-    final pool = List<String>.of(artistTags)..shuffle(rng);
-    final picked = pool.take(want).map(_displayName).toList();
-    return _renderRecipe(picked, rng);
+    final rng = random ?? math.Random();
+    final cat = catalog ?? ArtistMixEngine.catalog;
+    final byNorm = <String, ArtistCandidate>{};
+    for (final c in candidates) {
+      byNorm.putIfAbsent(canonicalName(c.name), () => c);
+    }
+    if (byNorm.isEmpty) return '';
+
+    // Prefer known-good triples when available in the local DB.
+    final usableTriples = cat.triples
+        .where((t) => t.artists.every((a) => byNorm.containsKey(canonicalName(a))))
+        .toList();
+    if (usableTriples.isNotEmpty && rng.nextDouble() < 0.42) {
+      final triple = usableTriples[rng.nextInt(usableTriples.length)];
+      final names = triple.artists
+          .map((a) => byNorm[canonicalName(a)]!.name)
+          .toList();
+      return _formatMix(names, random: rng, preferSeedStyle: true);
+    }
+
+    return _buildGenerativeMix(byNorm, cat, rng);
   }
 
-  /// Replace existing artist tags with a new mix; leave characters alone.
+  /// Replace existing artist tags with a new quality mix.
   static String replaceArtistsInPrompt(
     String prompt, {
-    required List<String> artistPool,
+    required List<ArtistCandidate> candidates,
     required Set<String> artistNames,
     Set<String> characterNames = const {},
-    Random? random,
+    math.Random? random,
+    ArtistMixCatalog? catalog,
   }) {
     final cleaned = stripArtists(
       prompt,
       artistNames: artistNames,
       characterNames: characterNames,
     );
-    final mix = buildMix(artistPool, random: random);
+    final mix = buildMix(candidates, random: random, catalog: catalog);
     if (mix.isEmpty) return cleaned;
     if (cleaned.isEmpty) return mix;
-    // Artists early = stronger NovelAI influence; characters/other tags follow.
     return '$mix, $cleaned';
   }
 
-  /// Split a prompt into top-level comma segments (respects `{}` `[]` `n:: ::`).
+  static String _buildGenerativeMix(
+    Map<String, ArtistCandidate> byNorm,
+    ArtistMixCatalog cat,
+    math.Random rng,
+  ) {
+    final styles = cat.buckets.keys.toList();
+    final style = styles.isEmpty ? null : styles[rng.nextInt(styles.length)];
+    final bucket = style == null
+        ? <String>{}
+        : cat.buckets[style]!.map(canonicalName).toSet();
+
+    bool inBucket(ArtistCandidate c) =>
+        bucket.isEmpty || bucket.contains(canonicalName(c.name));
+
+    final all = byNorm.values
+        .where((c) => !_isBanned(c.name))
+        .where((c) => c.count >= 150)
+        .toList();
+    if (all.isEmpty) return '';
+
+    final glueNorm = cat.glue.map(canonicalName).toSet();
+    final leadPool = all
+        .where((c) => c.count >= 250 && c.count <= 2800)
+        .where(inBucket)
+        .toList();
+    final leadFallback = all.where((c) => c.count >= 250 && c.count <= 2800).toList();
+    final supportPool = all
+        .where((c) => c.count >= 150 && c.count <= 1600)
+        .where(inBucket)
+        .toList();
+    final supportFallback =
+        all.where((c) => c.count >= 150 && c.count <= 1600).toList();
+    final gluePool = all
+        .where((c) => glueNorm.contains(canonicalName(c.name)))
+        .where(inBucket)
+        .toList();
+    final glueFallback =
+        all.where((c) => glueNorm.contains(canonicalName(c.name))).toList();
+
+    ArtistCandidate? pickLead() {
+      final roll = rng.nextDouble();
+      if (roll < 0.45) {
+        return _weightedPick(gluePool.isNotEmpty ? gluePool : glueFallback, rng);
+      }
+      if (roll < 0.85) {
+        return _weightedPick(leadPool.isNotEmpty ? leadPool : leadFallback, rng);
+      }
+      return _weightedPick(leadFallback.isNotEmpty ? leadFallback : all, rng);
+    }
+
+    final lead = pickLead();
+    if (lead == null) return '';
+
+    final picked = <ArtistCandidate>[lead];
+    final used = {canonicalName(lead.name)};
+    final supportCount = rng.nextDouble() < 0.22 ? 3 : 2;
+
+    ArtistCandidate? pickSupport({required bool preferGlue}) {
+      Iterable<ArtistCandidate> source;
+      if (preferGlue) {
+        source = (gluePool.isNotEmpty ? gluePool : glueFallback)
+            .where((c) => !used.contains(canonicalName(c.name)));
+      } else {
+        source = (supportPool.isNotEmpty ? supportPool : supportFallback)
+            .where((c) => !used.contains(canonicalName(c.name)));
+      }
+      final list = source.toList();
+      if (list.isEmpty) {
+        final any = all.where((c) => !used.contains(canonicalName(c.name))).toList();
+        return _weightedPick(any, rng);
+      }
+      return _weightedPick(list, rng);
+    }
+
+    // First support prefers a known "mixer"/glue artist.
+    final first = pickSupport(preferGlue: true);
+    if (first != null) {
+      picked.add(first);
+      used.add(canonicalName(first.name));
+    }
+    while (picked.length < supportCount + 1) {
+      final next = pickSupport(preferGlue: false);
+      if (next == null) break;
+      picked.add(next);
+      used.add(canonicalName(next.name));
+    }
+
+    // Avoid two mega-popular artists dominating the same mix.
+    final mega = picked.where((c) => c.count > 3200).toList();
+    if (mega.length > 1) {
+      picked.removeWhere((c) => c.count > 3200 && c != mega.first);
+      while (picked.length < 3) {
+        final next = pickSupport(preferGlue: false);
+        if (next == null) break;
+        if (next.count > 3200) continue;
+        picked.add(next);
+        used.add(canonicalName(next.name));
+      }
+    }
+
+    return _formatMix(picked.map((c) => c.name).toList(), random: rng);
+  }
+
+  /// Community-style formatting: mostly plain `artist:` with mild hierarchy.
+  static String _formatMix(
+    List<String> artists, {
+    math.Random? random,
+    bool preferSeedStyle = false,
+  }) {
+    if (artists.isEmpty) return '';
+    final rng = random ?? math.Random();
+    final names = artists.map(promptName).toList();
+
+    final recipe = preferSeedStyle ? rng.nextDouble() * 0.7 : rng.nextDouble();
+    if (recipe < 0.62) {
+      // Plain triple — the coolv3 default.
+      return names.map((n) => 'artist:$n').join(', ');
+    }
+    if (recipe < 0.84) {
+      // Mild lead emphasis.
+      final parts = <String>['{artist:${names.first}}'];
+      for (var i = 1; i < names.length; i++) {
+        parts.add('artist:${names[i]}');
+      }
+      return parts.join(', ');
+    }
+    // One weakened support for balance.
+    final parts = <String>['artist:${names.first}'];
+    for (var i = 1; i < names.length; i++) {
+      if (i == names.length - 1) {
+        parts.add('[artist:${names[i]}]');
+      } else {
+        parts.add('artist:${names[i]}');
+      }
+    }
+    return parts.join(', ');
+  }
+
+  static ArtistCandidate? _weightedPick(List<ArtistCandidate> pool, math.Random rng) {
+    if (pool.isEmpty) return null;
+    var total = 0.0;
+    final weights = <double>[];
+    for (final c in pool) {
+      // log bias: mid-count artists compete fairly with slightly higher ones.
+      final w = math.max(1.0, math.log(c.count + 1.0));
+      weights.add(w);
+      total += w;
+    }
+    var tick = rng.nextDouble() * total;
+    for (var i = 0; i < pool.length; i++) {
+      tick -= weights[i];
+      if (tick <= 0) return pool[i];
+    }
+    return pool.last;
+  }
+
+  static bool _isBanned(String name) {
+    final n = canonicalName(name);
+    return n == 'banned_artist' || n == 'banned artist';
+  }
+
+  /// Name as typed into NovelAI prompts (unescape danbooru `\(`).
+  static String promptName(String tag) {
+    return tag
+        .trim()
+        .replaceAll(r'\(', '(')
+        .replaceAll(r'\)', ')')
+        .replaceAll('_', ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+
+  static String canonicalName(String raw) {
+    return promptName(raw).toLowerCase();
+  }
+
+  static Set<String> _normalizeNameSet(Set<String> names) =>
+      names.map(canonicalName).where((n) => n.isNotEmpty).toSet();
+
   static List<String> splitSegments(String prompt) {
     final out = <String>[];
     final buf = StringBuffer();
@@ -139,36 +363,38 @@ class ArtistMixEngine {
     final bare = _bareContent(segment);
     if (bare.isEmpty) return false;
 
-    // Grouped weaken: [pakosun,ningen_mame]
-    final members = bare.split(',').map((m) => m.trim()).where((m) => m.isNotEmpty);
-    final memberList = members.toList();
-    if (memberList.length > 1) {
+    final members = bare
+        .split(',')
+        .map((m) => m.trim())
+        .where((m) => m.isNotEmpty)
+        .toList();
+    if (members.length > 1) {
       var artistHits = 0;
       var characterHits = 0;
-      for (final member in memberList) {
-        final name = _canonicalName(_stripDrawnBy(member));
+      for (final member in members) {
+        final name = canonicalName(_stripDrawnBy(member));
         if (characters.contains(name)) characterHits++;
         if (artists.contains(name) || _looksDrawnBy(member)) artistHits++;
       }
-      // Treat as artist group if mostly artists and not mostly characters.
-      return artistHits > 0 && artistHits >= characterHits && artistHits >= (memberList.length / 2).ceil();
+      return artistHits > 0 &&
+          artistHits >= characterHits &&
+          artistHits >= (members.length / 2).ceil();
     }
 
     final single = _stripDrawnBy(bare);
-    final name = _canonicalName(single);
+    final name = canonicalName(single);
     if (name.isEmpty) return false;
     if (characters.contains(name) && !artists.contains(name)) return false;
-    if (_looksDrawnBy(bare) || bare.toLowerCase().startsWith('artist:')) return true;
+    if (_looksDrawnBy(bare) || bare.toLowerCase().startsWith('artist:')) {
+      return true;
+    }
     return artists.contains(name);
   }
 
   static String _bareContent(String segment) {
     var text = segment.trim();
     final weight = _weightUnwrap.firstMatch(text);
-    if (weight != null) {
-      text = weight.group(2)!.trim();
-    }
-    // Peel matching outer brace/bracket layers.
+    if (weight != null) text = weight.group(2)!.trim();
     while (true) {
       final m = _outerBraces.firstMatch(text);
       if (m == null) break;
@@ -182,151 +408,68 @@ class ArtistMixEngine {
   static String _stripDrawnBy(String text) {
     final m = _drawnBy.firstMatch(text.trim());
     if (m != null) return m.group(1)!.trim();
-    return text.trim();
+    var t = text.trim();
+    if (t.toLowerCase().startsWith('artist:')) {
+      t = t.substring(7).trim();
+    }
+    return t;
   }
 
   static bool _looksDrawnBy(String text) => _drawnBy.hasMatch(text.trim());
+}
 
-  static String _canonicalName(String raw) {
-    return raw
-        .trim()
-        .toLowerCase()
-        .replaceAll('artist:', '')
-        .replaceAll(RegExp(r'\s+'), '_')
-        .replaceAll(RegExp(r'^_+|_+$'), '');
-  }
+class ArtistCandidate {
+  const ArtistCandidate({required this.name, required this.count});
+  final String name;
+  final int count;
+}
 
-  static Set<String> _normalizeNameSet(Set<String> names) {
-    return names.map(_canonicalName).where((n) => n.isNotEmpty).toSet();
-  }
+class ArtistMixCatalog {
+  const ArtistMixCatalog({
+    required this.glue,
+    required this.buckets,
+    required this.triples,
+  });
 
-  static String _displayName(String tag) {
-    return tag.trim().replaceAll('_', ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
-  }
+  final List<String> glue;
+  final Map<String, List<String>> buckets;
+  final List<ArtistMixTriple> triples;
 
-  /// Underscore form sometimes looks more "danbooru" inside groups.
-  static String _danbooruName(String tag) {
-    return tag.trim().replaceAll(' ', '_');
-  }
+  factory ArtistMixCatalog.empty() => const ArtistMixCatalog(
+        glue: [],
+        buckets: {},
+        triples: [],
+      );
 
-  static String _renderRecipe(List<String> artists, Random rng) {
-    if (artists.isEmpty) return '';
-    if (artists.length == 1) {
-      return _emphasize(artists.first, rng);
+  factory ArtistMixCatalog.fromJson(Map<String, dynamic> json) {
+    final glue = (json['glue'] as List? ?? const [])
+        .whereType<String>()
+        .toList();
+    final bucketsRaw = json['buckets'] as Map<String, dynamic>? ?? const {};
+    final buckets = <String, List<String>>{};
+    for (final entry in bucketsRaw.entries) {
+      buckets[entry.key] = (entry.value as List? ?? const [])
+          .whereType<String>()
+          .toList();
     }
-
-    final recipe = rng.nextInt(4);
-    switch (recipe) {
-      case 0:
-        return _recipeLeadDrawnBy(artists, rng);
-      case 1:
-        return _recipeDoubleEmphasis(artists, rng);
-      case 2:
-        return _recipeAllDrawnBy(artists, rng);
-      default:
-        return _recipeMixedWeights(artists, rng);
-    }
+    final triples = (json['triples'] as List? ?? const [])
+        .whereType<Map>()
+        .map((e) => ArtistMixTriple.fromJson(Map<String, dynamic>.from(e)))
+        .where((t) => t.artists.length >= 2)
+        .toList();
+    return ArtistMixCatalog(glue: glue, buckets: buckets, triples: triples);
   }
+}
 
-  /// `1.3:: drawn by A::, {B}, [C,D], [E], {F}`
-  static String _recipeLeadDrawnBy(List<String> artists, Random rng) {
-    final parts = <String>[];
-    parts.add(_numericDrawnBy(artists.first, _strongWeight(rng)));
-    var i = 1;
-    if (i < artists.length && rng.nextBool()) {
-      parts.add('{${artists[i]}}');
-      i++;
-    }
-    if (i + 1 < artists.length && rng.nextBool()) {
-      parts.add('[${_danbooruName(artists[i])},${_danbooruName(artists[i + 1])}]');
-      i += 2;
-    }
-    while (i < artists.length) {
-      parts.add(_weakOrBrace(artists[i], rng));
-      i++;
-    }
-    return parts.join(', ');
-  }
+class ArtistMixTriple {
+  const ArtistMixTriple({required this.style, required this.artists});
+  final String style;
+  final List<String> artists;
 
-  /// `{{A}}, [B,C], [D], {E}` with guaranteed emphasis
-  static String _recipeDoubleEmphasis(List<String> artists, Random rng) {
-    final parts = <String>[];
-    parts.add('{{${artists.first}}}');
-    var i = 1;
-    if (i + 1 < artists.length) {
-      parts.add('[${_danbooruName(artists[i])},${_danbooruName(artists[i + 1])}]');
-      i += 2;
-    }
-    while (i < artists.length) {
-      parts.add(_weakOrBrace(artists[i], rng));
-      i++;
-    }
-    return parts.join(', ');
-  }
-
-  /// `{drawn by A}, [drawn by B], drawn by C, drawn by D`
-  static String _recipeAllDrawnBy(List<String> artists, Random rng) {
-    final parts = <String>[];
-    for (var i = 0; i < artists.length; i++) {
-      final name = artists[i];
-      if (i == 0) {
-        parts.add(rng.nextBool()
-            ? _numericDrawnBy(name, _strongWeight(rng))
-            : '{drawn by $name}');
-      } else if (i == 1 && rng.nextBool()) {
-        parts.add('[drawn by $name]');
-      } else if (rng.nextDouble() < 0.25) {
-        parts.add('[$name]');
-      } else {
-        parts.add('drawn by $name');
-      }
-    }
-    return parts.join(', ');
-  }
-
-  /// `1.4:: drawn by A::, 1.2:: B::, [C], [D], {E}`
-  static String _recipeMixedWeights(List<String> artists, Random rng) {
-    final parts = <String>[];
-    parts.add(_numericDrawnBy(artists.first, _strongWeight(rng)));
-    var i = 1;
-    if (i < artists.length) {
-      parts.add('${_midWeight(rng)}:: ${artists[i]}::');
-      i++;
-    }
-    while (i < artists.length) {
-      parts.add(_weakOrBrace(artists[i], rng));
-      i++;
-    }
-    return parts.join(', ');
-  }
-
-  static String _emphasize(String name, Random rng) {
-    if (rng.nextBool()) return _numericDrawnBy(name, _strongWeight(rng));
-    return '{{$name}}';
-  }
-
-  static String _numericDrawnBy(String name, double weight) {
-    final w = weight == weight.roundToDouble()
-        ? weight.toInt().toString()
-        : weight.toStringAsFixed(1);
-    return '$w:: drawn by $name::';
-  }
-
-  static String _weakOrBrace(String name, Random rng) {
-    final roll = rng.nextDouble();
-    if (roll < 0.35) return '[$name]';
-    if (roll < 0.7) return '{${_danbooruName(name)}}';
-    if (roll < 0.85) return '{$name}';
-    return '[${_danbooruName(name)}]';
-  }
-
-  static double _strongWeight(Random rng) {
-    const options = [1.2, 1.3, 1.4];
-    return options[rng.nextInt(options.length)];
-  }
-
-  static double _midWeight(Random rng) {
-    const options = [1.1, 1.2, 1.3];
-    return options[rng.nextInt(options.length)];
-  }
+  factory ArtistMixTriple.fromJson(Map<String, dynamic> json) => ArtistMixTriple(
+        style: json['style'] as String? ?? 'anime',
+        artists: (json['artists'] as List? ?? const [])
+            .whereType<String>()
+            .toList(),
+      );
 }

@@ -376,6 +376,7 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
       final notifier = context.read<GenerationNotifier>();
       _generationListener = () => _onGenerationStateChanged(notifier);
       notifier.addListener(_generationListener);
+      NvPromptBridge.ensureMixCatalog();
       _maybeCheckForUpdate();
     });
   }
