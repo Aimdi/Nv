@@ -158,7 +158,7 @@ fun NaiCompanionRoot(
                 BrowserScreen(
                     viewModel = browserViewModel,
                     snackbarHostState = snackbarHostState,
-                    onAddTag = { name, kind -> builderViewModel.addTag(name, kind) },
+                    onAddTag = { artist -> builderViewModel.addCatalogTag(artist) },
                     onOpenPacks = { navController.navigate(ROUTE_PACKS) },
                 )
             }

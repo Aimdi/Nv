@@ -9,6 +9,7 @@ import dev.naicompanion.app.core.prompt.TagKind
 import dev.naicompanion.app.data.catalog.ArtistEntity
 import dev.naicompanion.app.data.catalog.CatalogQuery
 import dev.naicompanion.app.data.catalog.CatalogSort
+import dev.naicompanion.app.data.catalog.StrengthFilter
 import dev.naicompanion.app.data.packs.PackRepository
 import dev.naicompanion.app.data.repository.CatalogRepository
 import dev.naicompanion.app.data.repository.CatalogStatus
@@ -45,7 +46,8 @@ data class BrowserFilters(
     val text: String = "",
     val sources: Set<String> = emptySet(),
     val favoritesOnly: Boolean = false,
-    val sort: CatalogSort = CatalogSort.POST_COUNT_DESC,
+    val sort: CatalogSort = CatalogSort.STRENGTH_DESC,
+    val strengthFilter: StrengthFilter = StrengthFilter.HIDE_WEAK,
     val onlyWithPreview: Boolean = false,
 )
 
@@ -88,6 +90,7 @@ class BrowserViewModel(
                     text = filters.text,
                     sources = filters.sources,
                     requirePreview = filters.onlyWithPreview,
+                    strengthFilter = filters.strengthFilter,
                     sort = filters.sort,
                 ),
             )
@@ -172,6 +175,16 @@ class BrowserViewModel(
         viewModelScope.launch { settingsRepository.setOnlyWithPreview(next) }
     }
 
+    fun cycleStrengthFilter() {
+        val order = StrengthFilter.entries
+        val next = order[(_filters.value.strengthFilter.ordinal + 1) % order.size]
+        _filters.value = _filters.value.copy(strengthFilter = next)
+    }
+
+    fun setStrengthFilter(value: StrengthFilter) {
+        _filters.value = _filters.value.copy(strengthFilter = value)
+    }
+
     fun setSwipeMode(enabled: Boolean) {
         _swipeMode.value = enabled
     }
@@ -196,7 +209,8 @@ class BrowserViewModel(
     )
 
     fun notifyAdded(item: BrowseItem) {
-        _messages.tryEmit("Added ${item.artist.displayName} to the builder")
+        val strength = item.artist.strength.shortLabel
+        _messages.tryEmit("Added ${item.artist.displayName} ($strength)")
     }
 
     companion object {

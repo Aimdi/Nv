@@ -2,12 +2,27 @@ package dev.naicompanion.app.data.catalog
 
 import androidx.sqlite.db.SimpleSQLiteQuery
 import androidx.sqlite.db.SupportSQLiteQuery
+import dev.naicompanion.app.core.prompt.ArtistStrength
 
 enum class CatalogSort(val label: String) {
-    POST_COUNT_DESC("Most used"),
+    /**
+     * Confidence-adjusted nax.moe V4.5 community score. This is the useful default for style
+     * discovery: Danbooru volume alone surfaces weak, overfitted tags.
+     */
+    STRENGTH_DESC("Style pull on V4.5"),
+    POST_COUNT_DESC("Most used (Danbooru)"),
     NAME_ASC("Name (A-Z)"),
     UNIQUENESS_DESC("Most distinctive"),
     RANDOM("Shuffle"),
+}
+
+/** Minimum community strength the browser or suggestions should show. */
+enum class StrengthFilter(val label: String) {
+    ANY("Any strength"),
+    RATED("Has V4.5 rating"),
+    SOLID_PLUS("Solid or stronger"),
+    STRONG_ONLY("Strong only"),
+    HIDE_WEAK("Hide weak"),
 }
 
 /** Everything the browser can ask of the catalog, in a form that is cheap to compare and test. */
@@ -17,7 +32,10 @@ data class CatalogQuery(
     val kinds: Set<String> = emptySet(),
     val requirePreview: Boolean = false,
     val minPostCount: Int = 0,
-    val sort: CatalogSort = CatalogSort.POST_COUNT_DESC,
+    /** Extra floor on nax.moe vote count, on top of [strengthFilter]'s own thresholds. */
+    val minNaxVotes: Int = 0,
+    val strengthFilter: StrengthFilter = StrengthFilter.ANY,
+    val sort: CatalogSort = CatalogSort.STRENGTH_DESC,
     val limit: Int = DEFAULT_LIMIT,
 ) {
     companion object {
@@ -86,6 +104,34 @@ object CatalogQueryBuilder {
             args += query.minPostCount
         }
 
+        if (query.minNaxVotes > 0) {
+            where += "nax_votes IS NOT NULL AND nax_votes >= ?"
+            args += query.minNaxVotes
+        }
+
+        when (query.strengthFilter) {
+            StrengthFilter.ANY -> Unit
+            StrengthFilter.RATED -> {
+                where += "nax_votes IS NOT NULL AND nax_votes >= ?"
+                args += ArtistStrength.MIN_VOTES
+            }
+            StrengthFilter.SOLID_PLUS -> {
+                where += "nax_votes IS NOT NULL AND nax_votes >= ? AND nax_score >= ?"
+                args += ArtistStrength.MIN_VOTES
+                args += 5
+            }
+            StrengthFilter.STRONG_ONLY -> {
+                where += "nax_votes IS NOT NULL AND nax_votes >= ? AND nax_score >= ?"
+                args += ArtistStrength.MIN_VOTES
+                args += 15
+            }
+            StrengthFilter.HIDE_WEAK -> {
+                where += "(nax_votes IS NULL OR nax_votes < ? OR nax_score > ?)"
+                args += ArtistStrength.MIN_VOTES
+                args += -3
+            }
+        }
+
         val sql = buildString {
             append("SELECT * FROM artists")
             if (where.isNotEmpty()) {
@@ -116,6 +162,12 @@ object CatalogQueryBuilder {
     }
 
     private fun sortExpression(sort: CatalogSort): String = when (sort) {
+        // Confidence-adjusted: score/(votes+10). Unrated artists sink below anything with votes.
+        CatalogSort.STRENGTH_DESC ->
+            // Bayesian shrinkage: score * votes / (votes + prior). Matches strengthRankScore().
+            "nax_votes IS NULL OR nax_votes = 0, " +
+                "CAST(nax_score AS REAL) * nax_votes / (nax_votes + 10.0) DESC, " +
+                "nax_score DESC, post_count DESC"
         CatalogSort.POST_COUNT_DESC -> "post_count DESC, display_name COLLATE NOCASE ASC"
         CatalogSort.NAME_ASC -> "display_name COLLATE NOCASE ASC"
         // SQLite on older Android lacks NULLS LAST, so sort the null flag explicitly.

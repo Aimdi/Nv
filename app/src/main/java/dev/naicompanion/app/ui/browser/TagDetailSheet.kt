@@ -44,6 +44,8 @@ import dev.naicompanion.app.core.prompt.NovelAiPromptRenderer
 import dev.naicompanion.app.core.prompt.RenderOptions
 import dev.naicompanion.app.core.prompt.TagEntry
 import dev.naicompanion.app.ui.builder.formatPostCount
+import dev.naicompanion.app.ui.common.StrengthBadge
+import dev.naicompanion.app.ui.common.strengthExplanation
 import dev.naicompanion.app.ui.theme.PromptPreviewTextStyle
 import dev.naicompanion.app.ui.util.ClipboardBridge
 import java.io.File
@@ -60,8 +62,13 @@ fun TagDetailSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val context = LocalContext.current
 
+    val recommendedWeight = item.artist.strength.recommendedWeight
     val renderedTag = NovelAiPromptRenderer.renderEntry(
-        TagEntry(tag = item.artist.name, kind = item.kind),
+        TagEntry(
+            tag = item.artist.name,
+            kind = item.kind,
+            numericWeight = recommendedWeight,
+        ),
         RenderOptions.Default,
     ).orEmpty()
 
@@ -108,6 +115,10 @@ fun TagDetailSheet(
             Text(item.artist.displayName, style = MaterialTheme.typography.headlineSmall)
 
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                StrengthBadge(
+                    strength = item.artist.strength,
+                    score = item.artist.naxScore,
+                )
                 SuggestionChip(onClick = {}, label = { Text(sourceLabel(item.artist.source)) })
                 if (item.artist.postCount > 0) {
                     SuggestionChip(
@@ -124,14 +135,20 @@ fun TagDetailSheet(
             }
 
             Text(
+                text = strengthExplanation(item.artist),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+
+            Text(
                 text = renderedTag,
                 style = PromptPreviewTextStyle,
                 color = MaterialTheme.colorScheme.primary,
             )
 
             Text(
-                text = "Previews are generated samples from the source dataset, not the artist's " +
-                    "own work, and other NovelAI model versions can render this tag differently.",
+                text = "Style-pull ratings are community votes on nax.moe V4.5 samples " +
+                    "(strong = changes the look), not Danbooru popularity. Previews may be from " +
+                    "an older model and can look different.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -146,7 +163,13 @@ fun TagDetailSheet(
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
-                    Text("Add to builder")
+                    Text(
+                        if (recommendedWeight != null) {
+                            "Add at ${recommendedWeight}x"
+                        } else {
+                            "Add to builder"
+                        },
+                    )
                 }
                 FilledTonalButton(onClick = { ClipboardBridge.copy(context, renderedTag) }) {
                     Icon(Icons.Default.ContentCopy, contentDescription = "Copy tag")

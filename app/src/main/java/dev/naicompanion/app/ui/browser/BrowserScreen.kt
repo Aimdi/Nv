@@ -62,10 +62,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import dev.naicompanion.app.core.prompt.TagKind
+import dev.naicompanion.app.data.catalog.ArtistEntity
 import dev.naicompanion.app.data.catalog.CatalogSort
+import dev.naicompanion.app.data.catalog.StrengthFilter
 import dev.naicompanion.app.data.repository.CatalogStatus
 import dev.naicompanion.app.ui.builder.formatPostCount
 import dev.naicompanion.app.ui.common.EmptyState
+import dev.naicompanion.app.ui.common.StrengthBadge
 import dev.naicompanion.app.ui.util.ClipboardBridge
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -73,7 +76,7 @@ import dev.naicompanion.app.ui.util.ClipboardBridge
 fun BrowserScreen(
     viewModel: BrowserViewModel,
     snackbarHostState: SnackbarHostState,
-    onAddTag: (String, TagKind) -> Unit,
+    onAddTag: (ArtistEntity) -> Unit,
     onOpenPacks: () -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -92,7 +95,7 @@ fun BrowserScreen(
             onExit = { viewModel.setSwipeMode(false) },
             onFavorite = viewModel::toggleFavorite,
             onAdd = { item ->
-                onAddTag(item.artist.name, item.kind)
+                onAddTag(item.artist)
                 viewModel.notifyAdded(item)
             },
         )
@@ -165,6 +168,11 @@ fun BrowserScreen(
                     label = { Text("Favorites") },
                 )
                 FilterChip(
+                    selected = state.filters.strengthFilter != StrengthFilter.ANY,
+                    onClick = viewModel::cycleStrengthFilter,
+                    label = { Text(state.filters.strengthFilter.label) },
+                )
+                FilterChip(
                     selected = state.filters.onlyWithPreview,
                     onClick = viewModel::toggleOnlyWithPreview,
                     label = { Text("Has preview") },
@@ -215,7 +223,7 @@ fun BrowserScreen(
                                 item = item,
                                 onClick = { detail = item },
                                 onLongClick = {
-                                    onAddTag(item.artist.name, item.kind)
+                                    onAddTag(item.artist)
                                     viewModel.notifyAdded(item)
                                 },
                                 onToggleFavorite = { viewModel.toggleFavorite(item) },
@@ -233,7 +241,7 @@ fun BrowserScreen(
             fullImage = viewModel.detailImage(item),
             onDismiss = { detail = null },
             onAdd = {
-                onAddTag(item.artist.name, item.kind)
+                onAddTag(item.artist)
                 viewModel.notifyAdded(item)
             },
             onToggleFavorite = { viewModel.toggleFavorite(item) },
@@ -298,16 +306,25 @@ private fun TagCard(
                     ),
             )
 
-            Text(
-                text = item.artist.displayName,
-                style = MaterialTheme.typography.labelMedium,
-                color = Color.White,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
+            Column(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(6.dp),
-            )
+                verticalArrangement = Arrangement.spacedBy(3.dp),
+            ) {
+                StrengthBadge(
+                    strength = item.artist.strength,
+                    score = item.artist.naxScore,
+                    compact = true,
+                )
+                Text(
+                    text = item.artist.displayName,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.White,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
 
             IconButton(
                 onClick = onToggleFavorite,

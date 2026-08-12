@@ -21,7 +21,7 @@ abstract class CatalogDatabase : RoomDatabase() {
     abstract fun catalogDao(): CatalogDao
 
     companion object {
-        const val VERSION = 1
+        const val VERSION = 2
         const val ASSET_PATH = "catalog/catalog.db"
         private const val DATABASE_NAME = "nai_catalog.db"
 

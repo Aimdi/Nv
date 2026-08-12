@@ -20,7 +20,7 @@ data class AppSettings(
     val artistPrefix: Boolean = true,
     val multilineSeparator: Boolean = false,
     val browserColumns: Int = 3,
-    val browserSort: CatalogSort = CatalogSort.POST_COUNT_DESC,
+    val browserSort: CatalogSort = CatalogSort.STRENGTH_DESC,
     val copyOpensNovelAi: Boolean = false,
     val packManifestUrl: String = DEFAULT_PACK_MANIFEST_URL,
     val onlyWithPreview: Boolean = false,
@@ -53,7 +53,7 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>) {
             multilineSeparator = prefs[KEY_MULTILINE] ?: false,
             browserColumns = prefs[KEY_COLUMNS] ?: 3,
             browserSort = runCatching { CatalogSort.valueOf(prefs[KEY_SORT] ?: "") }
-                .getOrDefault(CatalogSort.POST_COUNT_DESC),
+                .getOrDefault(CatalogSort.STRENGTH_DESC),
             copyOpensNovelAi = prefs[KEY_COPY_OPENS] ?: false,
             packManifestUrl = prefs[KEY_MANIFEST_URL] ?: AppSettings.DEFAULT_PACK_MANIFEST_URL,
             onlyWithPreview = prefs[KEY_ONLY_PREVIEW] ?: false,

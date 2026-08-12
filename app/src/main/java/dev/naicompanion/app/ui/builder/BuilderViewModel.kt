@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import dev.naicompanion.app.core.prompt.ArtistStrength
 import dev.naicompanion.app.core.prompt.NovelAiPromptParser
 import dev.naicompanion.app.core.prompt.NovelAiPromptRenderer
 import dev.naicompanion.app.core.prompt.RenderWarning
@@ -12,6 +13,8 @@ import dev.naicompanion.app.core.prompt.TagEntry
 import dev.naicompanion.app.core.prompt.TagKind
 import dev.naicompanion.app.data.catalog.ArtistEntity
 import dev.naicompanion.app.data.catalog.CatalogQuery
+import dev.naicompanion.app.data.catalog.CatalogSort
+import dev.naicompanion.app.data.catalog.StrengthFilter
 import dev.naicompanion.app.data.repository.CatalogRepository
 import dev.naicompanion.app.data.repository.ComboRepository
 import dev.naicompanion.app.data.repository.DraftRepository
@@ -32,8 +35,9 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -89,16 +93,32 @@ class BuilderViewModel(
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), BuilderUiState())
 
-    val suggestions: StateFlow<List<ArtistEntity>> = _searchQuery
-        .debounce(150)
-        .distinctUntilChanged()
-        .flatMapLatest { query ->
+    /**
+     * Artist suggestions ranked by V4.5 community style-pull (nax.moe), not Danbooru volume.
+     *
+     * Blank query mixes high-confidence Strong tags with distinctive Solid picks so the list is
+     * not a static popularity/strength leaderboard. Tags already in the combo are hidden.
+     */
+    val suggestions: StateFlow<List<ArtistEntity>> = combine(
+        _searchQuery.debounce(150).distinctUntilChanged(),
+        entries,
+    ) { query, tags ->
+        query to tags.map { it.tag.lowercase() }.toSet()
+    }
+        .flatMapLatest { (query, alreadyAdded) ->
             if (query.isBlank()) {
-                flowOf(emptyList())
+                flow { emit(blankSuggestions(alreadyAdded)) }
             } else {
                 catalogRepository.observe(
-                    CatalogQuery(text = query, limit = SUGGESTION_LIMIT),
-                )
+                    CatalogQuery(
+                        text = query,
+                        sort = CatalogSort.STRENGTH_DESC,
+                        limit = SUGGESTION_LIMIT * 2,
+                    ),
+                ).map { rows ->
+                    rows.filter { it.name.lowercase() !in alreadyAdded }
+                        .take(SUGGESTION_LIMIT)
+                }
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -146,11 +166,27 @@ class BuilderViewModel(
     }
 
     fun addCatalogTag(artist: ArtistEntity) {
-        addTag(artist.name, TagKind.fromStorage(artist.kind))
+        addTag(
+            tag = artist.name,
+            kind = TagKind.fromStorage(artist.kind),
+            numericWeight = artist.strength.recommendedWeight,
+        )
+        val strengthNote = when (artist.strength) {
+            ArtistStrength.STRONG -> "strong style pull on V4.5"
+            ArtistStrength.SOLID -> "solid style pull on V4.5"
+            ArtistStrength.WEAK -> "weak on V4.5 — try a stronger tag or raise weight yourself"
+            ArtistStrength.MIXED -> "mixed on V4.5 — light 1.1:: nudge applied"
+            ArtistStrength.UNKNOWN -> "unrated on V4.5"
+        }
+        _messages.tryEmit(BuilderMessage("Added ${artist.displayName} ($strengthNote)"))
         _searchQuery.value = ""
     }
 
-    fun addTag(tag: String, kind: TagKind = TagKind.GENERAL) {
+    fun addTag(
+        tag: String,
+        kind: TagKind = TagKind.GENERAL,
+        numericWeight: Double? = null,
+    ) {
         val normalized = tag.trim()
         if (normalized.isEmpty()) return
         val alreadyPresent = entries.value.any {
@@ -160,7 +196,11 @@ class BuilderViewModel(
             _messages.tryEmit(BuilderMessage("\"$normalized\" is already in the combo"))
             return
         }
-        entries.value = entries.value + TagEntry(tag = normalized, kind = kind)
+        entries.value = entries.value + TagEntry(
+            tag = normalized,
+            kind = kind,
+            numericWeight = numericWeight,
+        )
     }
 
     fun remove(id: String) {
@@ -294,8 +334,69 @@ class BuilderViewModel(
     private fun defaultName(tags: List<TagEntry>): String =
         tags.take(3).joinToString(", ") { it.tag }.ifBlank { "Untitled combo" }
 
+    private suspend fun blankSuggestions(alreadyAdded: Set<String>): List<ArtistEntity> {
+        val strong = catalogRepository.search(
+            CatalogQuery(
+                strengthFilter = StrengthFilter.STRONG_ONLY,
+                minNaxVotes = BLANK_STRONG_MIN_VOTES,
+                sort = CatalogSort.STRENGTH_DESC,
+                limit = SUGGESTION_POOL,
+            ),
+        )
+        val distinctive = catalogRepository.search(
+            CatalogQuery(
+                strengthFilter = StrengthFilter.SOLID_PLUS,
+                minNaxVotes = BLANK_SOLID_MIN_VOTES,
+                sort = CatalogSort.UNIQUENESS_DESC,
+                limit = SUGGESTION_POOL,
+            ),
+        )
+        return mixBlankSuggestions(strong, distinctive, alreadyAdded, SUGGESTION_LIMIT)
+    }
+
     companion object {
-        private const val SUGGESTION_LIMIT = 30
+        private const val SUGGESTION_LIMIT = 24
+        private const val SUGGESTION_POOL = 48
+        /** Prefer broadly validated Strong tags over 3-vote spikes in the blank list. */
+        private const val BLANK_STRONG_MIN_VOTES = 8
+        private const val BLANK_SOLID_MIN_VOTES = 5
+
+        /**
+         * Interleave high-confidence Strong tags with distinctive Solid/Strong picks so the
+         * empty search field feels like discovery, not a fixed leaderboard.
+         */
+        internal fun mixBlankSuggestions(
+            strong: List<ArtistEntity>,
+            distinctive: List<ArtistEntity>,
+            alreadyAdded: Set<String>,
+            limit: Int,
+        ): List<ArtistEntity> {
+            fun usable(rows: List<ArtistEntity>) = rows.asSequence()
+                .filter { it.name.lowercase() !in alreadyAdded }
+
+            val strongQueue = ArrayDeque(usable(strong).toList())
+            val seen = strongQueue.map { it.id }.toMutableSet()
+            val distinctiveQueue = ArrayDeque(
+                usable(distinctive).filter { it.id !in seen }.toList(),
+            )
+
+            val out = ArrayList<ArtistEntity>(limit)
+            while (out.size < limit && (strongQueue.isNotEmpty() || distinctiveQueue.isNotEmpty())) {
+                // Roughly 2 strong : 1 distinctive.
+                repeat(2) {
+                    if (out.size >= limit) return out
+                    val next = strongQueue.removeFirstOrNull() ?: return@repeat
+                    out += next
+                    seen += next.id
+                }
+                if (out.size >= limit) break
+                val spice = distinctiveQueue.removeFirstOrNull() ?: continue
+                if (spice.id in seen) continue
+                out += spice
+                seen += spice.id
+            }
+            return out
+        }
 
         fun factory(container: AppContainer): ViewModelProvider.Factory = viewModelFactory {
             initializer {

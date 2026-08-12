@@ -7,6 +7,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.google.common.truth.Truth.assertThat
 import dev.naicompanion.app.core.prompt.NovelAiModel
 import dev.naicompanion.app.core.prompt.TagKind
+import dev.naicompanion.app.data.catalog.ArtistEntity
 import dev.naicompanion.app.data.catalog.CatalogDatabase
 import dev.naicompanion.app.data.repository.CatalogRepository
 import dev.naicompanion.app.data.repository.ComboRepository
@@ -377,6 +378,72 @@ class BuilderViewModelTest {
         advanceUntilIdle()
 
         assertThat(viewModel.suggestions.value.map { it.name }).contains("wlop")
+    }
+
+    @Test
+    fun `blank suggestions show strong V4_5 artists not post count leaders`() = runTest(dispatcher) {
+        val viewModel = newViewModel()
+        backgroundScope.launch { viewModel.suggestions.collect {} }
+        advanceUntilIdle()
+
+        val suggestions = viewModel.suggestions.value
+        assertThat(suggestions).isNotEmpty()
+        suggestions.forEach {
+            assertThat(it.naxScore!!).isAtLeast(5)
+            assertThat(it.naxVotes!!).isAtLeast(5)
+        }
+        // Mix should not be a pure strength dump of only the same shelf with 3-vote noise.
+        assertThat(suggestions.any { it.naxVotes!! >= 8 }).isTrue()
+    }
+
+    @Test
+    fun `picking a mixed catalog tag applies a light starter weight`() = runTest(dispatcher) {
+        val viewModel = newViewModel()
+        collecting(viewModel)
+        backgroundScope.launch { viewModel.suggestions.collect {} }
+        advanceUntilIdle()
+
+        viewModel.onSearchQueryChange("a")
+        advanceUntilIdle()
+        val candidate = viewModel.suggestions.value.firstOrNull {
+            it.strength.recommendedWeight != null
+        } ?: return@runTest
+        viewModel.addCatalogTag(candidate)
+        advanceUntilIdle()
+
+        val entry = viewModel.uiState.value.entries.single()
+        assertThat(entry.numericWeight).isEqualTo(candidate.strength.recommendedWeight)
+    }
+
+    @Test
+    fun `blank suggestion mixer interleaves strong and distinctive picks`() {
+        fun artist(id: Long, name: String) = ArtistEntity(
+            id = id,
+            name = name,
+            displayName = name,
+            kind = "ARTIST",
+            postCount = 0,
+            source = "nai-v3",
+            sources = "|nai-v3|",
+            preview = null,
+            uniqueness = null,
+            aliases = null,
+            naxScore = 20,
+            naxUp = 20,
+            naxDown = 0,
+            naxVotes = 20,
+        )
+        val strong = (1L..6L).map { artist(it, "strong$it") }
+        val distinctive = (101L..106L).map { artist(it, "spice$it") }
+        val mixed = BuilderViewModel.mixBlankSuggestions(
+            strong = strong,
+            distinctive = distinctive,
+            alreadyAdded = setOf("strong1"),
+            limit = 6,
+        )
+        assertThat(mixed.map { it.name }).containsExactly(
+            "strong2", "strong3", "spice101", "strong4", "strong5", "spice102",
+        ).inOrder()
     }
 
     @Test

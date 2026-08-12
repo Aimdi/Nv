@@ -6,21 +6,20 @@ DDL this script reads the schema JSON that Room's annotation processor exports d
 (``app/schemas/...CatalogDatabase/<version>.json``) and replays the exact ``CREATE`` statements,
 identity hash and ``user_version`` that Room will look for.
 
-Sources (both permissively licensed, see README for attribution):
+Sources:
 
-  * ``artists.json`` from ``deus-ex-machina/novelai-anime-v3-artist-comparison`` (Apache-2.0) --
-    every Danbooru artist tag with more than 94 posts, sampled with NAI Diffusion V3.
-  * ``app/data.js`` from ``ThetaCursed/Illustrious-NoobAI-Style-Explorer`` (MIT) -- artists that
-    work with Illustrious/NoobAI, with a distinctiveness score.
-
-Artists listed by both datasets are merged into a single row; the ``sources`` column records
-every dataset that covers them.
+  * ``artists.json`` from ``deus-ex-machina/novelai-anime-v3-artist-comparison`` (Apache-2.0).
+  * Illustrious uniqueness scores (from ThetaCursed's explorer, or a previously exported seed).
+  * ``tags.json`` from https://nax.moe/downloads/tags.zip — community up/down votes on NovelAI
+    V4.5 artist galleries. This is the ranking signal that actually answers "does this artist
+    tag pull style on V4.5?", which Danbooru post counts do not.
 
 Usage:
     python3 tools/build_catalog.py \
         --nai work/artists.json \
-        --illustrious work/data.js \
-        --schema app/schemas/dev.naicompanion.app.data.catalog.CatalogDatabase/1.json \
+        --uniqueness-seed work/uniqueness_seed.json \
+        --nax work/nax_tags.json \
+        --schema app/schemas/dev.naicompanion.app.data.catalog.CatalogDatabase/2.json \
         --out app/src/main/assets/catalog/catalog.db
 """
 
@@ -32,6 +31,7 @@ import os
 import re
 import sqlite3
 import sys
+from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Iterable
 
@@ -40,7 +40,13 @@ SOURCE_ILLUSTRIOUS = "illustrious"
 SOURCE_DELIMITER = "|"
 
 # Danbooru bookkeeping tags that are not artists.
-EXCLUDED_TAGS = {"banned_artist", "artist_request", "anonymous_artist"}
+EXCLUDED_TAGS = {"banned_artist", "artist_request", "anonymous_artist", "banned_artist"}
+
+# nax.moe galleries that measure Danbooru artist tags on NovelAI V4.5.
+NAX_V45_ARTIST_GALLERIES = (
+    "danbooru-artist-tags-v4.5",  # constrained prompt
+    "danbooru-artist-tags-2-v4.5",  # loose prompt
+)
 
 ROOM_MASTER_TABLE_ID = 42
 
@@ -51,6 +57,8 @@ class Artist:
     post_count: int = 0
     uniqueness: float | None = None
     sources: set[str] = field(default_factory=set)
+    nax_up: int | None = None
+    nax_down: int | None = None
 
     @property
     def display_name(self) -> str:
@@ -78,11 +86,23 @@ class Artist:
             alternatives.add(hyphenless)
         return " ".join(sorted(alternatives)) or None
 
+    @property
+    def nax_score(self) -> int | None:
+        if self.nax_up is None or self.nax_down is None:
+            return None
+        return self.nax_up - self.nax_down
+
+    @property
+    def nax_votes(self) -> int | None:
+        if self.nax_up is None or self.nax_down is None:
+            return None
+        return self.nax_up + self.nax_down
+
 
 def normalize_tag(raw: str) -> str:
     """Fold a name from either dataset into the canonical Danbooru underscore form."""
     text = raw.strip()
-    # ThetaCursed stores names in prompt form with escaped parentheses and spaces.
+    # ThetaCursed / nax.moe store names in prompt form with spaces and escaped parentheses.
     text = text.replace("\\(", "(").replace("\\)", ")").replace("\\", "")
     text = re.sub(r"\s+", "_", text)
     text = re.sub(r"_+", "_", text)
@@ -114,22 +134,60 @@ def load_illustrious(path: str) -> list[Artist]:
     start = text.index("[")
     end = text.rindex("]") + 1
     records = json.loads(text[start:end])
+    return _artists_from_uniqueness_records(records, mark_illustrious=True)
 
+
+def load_uniqueness_seed(path: str) -> list[Artist]:
+    """Previously exported uniqueness scores, used when the upstream explorer is unavailable."""
+    with open(path, encoding="utf-8") as handle:
+        records = json.load(handle)
+    return _artists_from_uniqueness_records(records, mark_illustrious=True)
+
+
+def _artists_from_uniqueness_records(records: list[dict], mark_illustrious: bool) -> list[Artist]:
     artists = []
     for record in records:
         name = normalize_tag(record["name"])
         if not name or name in EXCLUDED_TAGS:
             continue
-        uniqueness = record.get("uniqueness_score")
+        uniqueness = record.get("uniqueness_score", record.get("uniqueness"))
+        sources = set()
+        if mark_illustrious:
+            sources.add(SOURCE_ILLUSTRIOUS)
+        raw_sources = record.get("sources")
+        if isinstance(raw_sources, str):
+            sources |= {part for part in raw_sources.split(SOURCE_DELIMITER) if part}
         artists.append(
             Artist(
                 name=name,
                 post_count=int(record.get("post_count") or 0),
                 uniqueness=float(uniqueness) if uniqueness is not None else None,
-                sources={SOURCE_ILLUSTRIOUS},
+                sources=sources or {SOURCE_ILLUSTRIOUS},
             )
         )
     return artists
+
+
+def load_nax_votes(path: str) -> dict[str, tuple[int, int]]:
+    """Merge constrained + loose V4.5 galleries into per-artist (up, down) totals."""
+    with open(path, encoding="utf-8") as handle:
+        payload = json.load(handle)
+    galleries = payload.get("galleries", payload)
+    totals: dict[str, list[int]] = defaultdict(lambda: [0, 0])
+    for slug in NAX_V45_ARTIST_GALLERIES:
+        gallery = galleries.get(slug)
+        if not gallery:
+            print(f"warning: nax gallery {slug!r} missing", file=sys.stderr)
+            continue
+        tags = gallery["tags"] if isinstance(gallery, dict) else gallery
+        for record in tags:
+            name = normalize_tag(record["tag"])
+            if not name or name in EXCLUDED_TAGS:
+                continue
+            votes = record.get("votes") or {}
+            totals[name][0] += int(votes.get("up") or 0)
+            totals[name][1] += int(votes.get("down") or 0)
+    return {name: (up, down) for name, (up, down) in totals.items()}
 
 
 def merge(groups: Iterable[list[Artist]]) -> list[Artist]:
@@ -143,16 +201,23 @@ def merge(groups: Iterable[list[Artist]]) -> list[Artist]:
                     post_count=artist.post_count,
                     uniqueness=artist.uniqueness,
                     sources=set(artist.sources),
+                    nax_up=artist.nax_up,
+                    nax_down=artist.nax_down,
                 )
                 continue
-            # The two datasets were snapshotted at different times; the larger count is newer.
             existing.post_count = max(existing.post_count, artist.post_count)
             if existing.uniqueness is None:
                 existing.uniqueness = artist.uniqueness
             existing.sources |= artist.sources
+    return list(merged.values())
 
-    ordered = sorted(merged.values(), key=lambda a: (-a.post_count, a.name))
-    return ordered
+
+def apply_nax_votes(artists: list[Artist], votes: dict[str, tuple[int, int]]) -> None:
+    for artist in artists:
+        pair = votes.get(artist.name)
+        if pair is None:
+            continue
+        artist.nax_up, artist.nax_down = pair
 
 
 def load_schema(path: str) -> dict:
@@ -174,6 +239,19 @@ def create_database(out_path: str, schema: dict, artists: list[Artist], preview_
         for index in entity.get("indices", []):
             cursor.execute(index["createSql"].replace("${TABLE_NAME}", table))
 
+    # Default browse order is strength, so write the rows already sorted that way.
+    artists = sorted(
+        artists,
+        key=lambda a: (
+            a.nax_votes is None or a.nax_votes == 0,
+            # Bayesian shrinkage: score * votes / (votes + prior). Matches app strengthRankScore().
+            -((a.nax_score or 0) * (a.nax_votes or 0) / ((a.nax_votes or 0) + 10.0)),
+            -(a.nax_score or 0),
+            -a.post_count,
+            a.name,
+        ),
+    )
+
     rows = [
         (
             index + 1,
@@ -186,13 +264,18 @@ def create_database(out_path: str, schema: dict, artists: list[Artist], preview_
             f"{artist.name}{preview_ext}",
             artist.uniqueness,
             artist.aliases,
+            artist.nax_score,
+            artist.nax_up,
+            artist.nax_down,
+            artist.nax_votes,
         )
         for index, artist in enumerate(artists)
     ]
     cursor.executemany(
         "INSERT INTO artists"
-        " (id, name, display_name, kind, post_count, source, sources, preview, uniqueness, aliases)"
-        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        " (id, name, display_name, kind, post_count, source, sources, preview, uniqueness,"
+        "  aliases, nax_score, nax_up, nax_down, nax_votes)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         rows,
     )
 
@@ -221,8 +304,16 @@ def main() -> int:
     parser.add_argument("--nai", help="artists.json from the NAI v3 artist comparison dataset")
     parser.add_argument("--illustrious", help="app/data.js from the Illustrious style explorer")
     parser.add_argument(
+        "--uniqueness-seed",
+        help="JSON array of {name, uniqueness_score} when the live explorer is unavailable",
+    )
+    parser.add_argument(
+        "--nax",
+        help="tags.json from nax.moe/downloads/tags.zip (V4.5 community votes)",
+    )
+    parser.add_argument(
         "--schema",
-        default="app/schemas/dev.naicompanion.app.data.catalog.CatalogDatabase/1.json",
+        default="app/schemas/dev.naicompanion.app.data.catalog.CatalogDatabase/2.json",
         help="Room-exported schema JSON for the catalog database",
     )
     parser.add_argument("--out", default="app/src/main/assets/catalog/catalog.db")
@@ -239,8 +330,8 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    if not args.nai and not args.illustrious:
-        parser.error("at least one of --nai or --illustrious is required")
+    if not args.nai and not args.illustrious and not args.uniqueness_seed:
+        parser.error("at least one of --nai, --illustrious or --uniqueness-seed is required")
 
     groups = []
     if args.nai:
@@ -251,10 +342,23 @@ def main() -> int:
         illustrious = load_illustrious(args.illustrious)
         print(f"Illustrious: {len(illustrious)} artists")
         groups.append(illustrious)
+    if args.uniqueness_seed:
+        seed = load_uniqueness_seed(args.uniqueness_seed)
+        print(f"Uniqueness seed: {len(seed)} artists")
+        groups.append(seed)
 
     artists = merge(groups)
     if args.min_post_count > 0:
         artists = [a for a in artists if a.post_count >= args.min_post_count]
+
+    if args.nax:
+        votes = load_nax_votes(args.nax)
+        apply_nax_votes(artists, votes)
+        rated = sum(1 for a in artists if a.nax_votes)
+        strong = sum(1 for a in artists if (a.nax_score or 0) >= 15 and (a.nax_votes or 0) >= 3)
+        weak = sum(1 for a in artists if (a.nax_score or 0) <= -3 and (a.nax_votes or 0) >= 3)
+        print(f"nax.moe V4.5 votes: {len(votes)} tags, {rated} matched, {strong} strong, {weak} weak")
+
     print(f"Merged: {len(artists)} unique artists")
 
     schema = load_schema(args.schema)

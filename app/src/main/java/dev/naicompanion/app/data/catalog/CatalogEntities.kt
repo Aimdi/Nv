@@ -3,8 +3,10 @@ package dev.naicompanion.app.data.catalog
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Fts4
+import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import dev.naicompanion.app.core.prompt.ArtistStrength
 
 /**
  * One browsable tag in the bundled catalog.
@@ -19,6 +21,8 @@ import androidx.room.PrimaryKey
         Index(value = ["post_count"]),
         Index(value = ["source"]),
         Index(value = ["kind"]),
+        Index(value = ["nax_score"]),
+        Index(value = ["nax_votes"]),
     ],
 )
 data class ArtistEntity(
@@ -63,7 +67,28 @@ data class ArtistEntity(
     /** Space-separated alternative spellings folded into the search index. */
     @ColumnInfo(name = "aliases")
     val aliases: String?,
-)
+
+    /**
+     * Net community score from nax.moe V4.5 artist galleries (constrained + loose prompts).
+     * Null means the artist was not in those galleries, not "zero votes".
+     */
+    @ColumnInfo(name = "nax_score")
+    val naxScore: Int? = null,
+
+    @ColumnInfo(name = "nax_up")
+    val naxUp: Int? = null,
+
+    @ColumnInfo(name = "nax_down")
+    val naxDown: Int? = null,
+
+    /** Total up+down votes; used as a confidence floor for [strength]. */
+    @ColumnInfo(name = "nax_votes")
+    val naxVotes: Int? = null,
+) {
+    @get:Ignore
+    val strength: ArtistStrength
+        get() = ArtistStrength.fromVotes(naxScore, naxVotes)
+}
 
 @Fts4(contentEntity = ArtistEntity::class)
 @Entity(tableName = "artists_fts")

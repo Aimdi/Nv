@@ -45,6 +45,9 @@ class CatalogRepository(private val dao: CatalogDao) {
         emit(emptyList())
     }
 
+    suspend fun search(query: CatalogQuery): List<ArtistEntity> =
+        runCatching { dao.search(CatalogQueryBuilder.build(query)) }.getOrDefault(emptyList())
+
     suspend fun findByName(name: String): ArtistEntity? =
         runCatching { dao.findByName(name) }.getOrNull()
 

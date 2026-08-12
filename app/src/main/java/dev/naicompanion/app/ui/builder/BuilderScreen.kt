@@ -66,6 +66,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.naicompanion.app.core.prompt.TagEntry
 import dev.naicompanion.app.core.prompt.TagKind
 import dev.naicompanion.app.data.catalog.ArtistEntity
+import dev.naicompanion.app.ui.common.ArtistMetaRow
 import dev.naicompanion.app.ui.common.SaveDialog
 import dev.naicompanion.app.ui.theme.PromptPreviewTextStyle
 import dev.naicompanion.app.ui.util.ClipboardBridge
@@ -163,6 +164,7 @@ fun BuilderScreen(
                 if (suggestions.isNotEmpty()) {
                     SuggestionList(
                         suggestions = suggestions,
+                        queryBlank = query.isBlank(),
                         onPick = { viewModel.addCatalogTag(it) },
                     )
                 }
@@ -275,12 +277,24 @@ private fun TagInputField(
 }
 
 @Composable
-private fun SuggestionList(suggestions: List<ArtistEntity>, onPick: (ArtistEntity) -> Unit) {
+private fun SuggestionList(
+    suggestions: List<ArtistEntity>,
+    queryBlank: Boolean,
+    onPick: (ArtistEntity) -> Unit,
+) {
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        LazyColumn(modifier = Modifier.heightIn(max = 220.dp)) {
+        if (queryBlank) {
+            Text(
+                text = "Strong style pull on V4.5 — tap to add",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            )
+        }
+        LazyColumn(modifier = Modifier.heightIn(max = 260.dp)) {
             items(suggestions, key = { it.id }) { artist ->
                 Row(
                     modifier = Modifier
@@ -297,16 +311,17 @@ private fun SuggestionList(suggestions: List<ArtistEntity>, onPick: (ArtistEntit
                             tint = MaterialTheme.colorScheme.primary,
                         )
                     }
-                    Text(
-                        text = artist.displayName,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Text(
-                        text = formatPostCount(artist.postCount),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = artist.displayName,
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                        ArtistMetaRow(
+                            artist = artist,
+                            showPostCount = false,
+                            showVoteCount = true,
+                        )
+                    }
                 }
                 HorizontalDivider()
             }
@@ -323,8 +338,9 @@ private fun EmptyBuilderHint() {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text("Start building", style = MaterialTheme.typography.titleMedium)
             Text(
-                text = "Search the tag catalog above, paste an existing prompt, or type any tag " +
-                    "and press add. Tap a chip to adjust its emphasis, and drag to reorder.",
+                text = "Suggestions measure style pull on NovelAI V4.5 (nax.moe votes), not " +
+                    "Danbooru popularity. Strong = changes the look. Tap one above, paste a " +
+                    "prompt, or type any tag. Tap a chip to weight it.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

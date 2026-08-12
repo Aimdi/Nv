@@ -2,7 +2,7 @@
 
 An offline Android app for composing NovelAI image prompts. It builds prompts with the correct
 emphasis syntax, keeps a searchable library of what you have written, and lets you browse a
-catalog of 17,228 artist tags with optional preview images.
+catalog of ~15.7k artist tags with V4.5 style-pull ratings and optional preview images.
 
 It never contacts NovelAI and cannot generate images. NovelAI on mobile is a website/PWA, so the
 workflow this app is built around is: compose here, copy, paste into the NovelAI prompt box.
@@ -10,8 +10,9 @@ workflow this app is built around is: compose here, copy, paste into the NovelAI
 ## Features
 
 **Combo builder.** Add tags by searching the bundled catalog, typing them, or pasting an existing
-prompt. Each tag carries its own emphasis, and the rendered NovelAI string updates live above a
-one-tap copy button.
+prompt. Empty-search suggestions mix high-confidence V4.5 style-pull artists with distinctive
+Solid picks (nax.moe votes — not Danbooru post count). Each tag carries its own emphasis, and the
+rendered NovelAI string updates live above a one-tap copy button.
 
 - `{tag}` / `[tag]` bracket nesting, stepped one x1.05 level at a time
 - `1.5::tag::` numeric emphasis on a slider, including negative weights on V4.5
@@ -46,7 +47,7 @@ Needs JDK 17+ and the Android SDK (compile/target 35, min 26).
 
 ```bash
 ./gradlew assembleDebug        # debug APK
-./gradlew testDebugUnitTest    # 137 unit tests
+./gradlew testDebugUnitTest    # unit tests
 ./gradlew lintDebug
 ./gradlew assembleRelease      # falls back to the debug key when unsigned
 ```
@@ -107,15 +108,17 @@ covered by 50 tests including round-trip stability.
 
 ## Data
 
-The catalog merges two permissively licensed datasets into one row per artist:
+The catalog merges artist lists plus V4.5 community strength votes:
 
-| Source | License | Artists |
+| Source | License | Role |
 | --- | --- | --- |
-| [`deus-ex-machina/novelai-anime-v3-artist-comparison`](https://huggingface.co/datasets/deus-ex-machina/novelai-anime-v3-artist-comparison) | Apache-2.0 | 14,999 |
-| [`ThetaCursed/Illustrious-NoobAI-Style-Explorer`](https://github.com/ThetaCursed/Illustrious-NoobAI-Style-Explorer) | MIT | 16,006 |
+| [`deus-ex-machina/novelai-anime-v3-artist-comparison`](https://huggingface.co/datasets/deus-ex-machina/novelai-anime-v3-artist-comparison) | Apache-2.0 | Artist names + NAI v3 preview keys |
+| [`ThetaCursed/Illustrious-NoobAI-Style-Explorer`](https://github.com/ThetaCursed/Illustrious-NoobAI-Style-Explorer) | MIT | Extra artists + uniqueness seed |
+| [nax.moe `tags.zip`](https://nax.moe/downloads/tags.zip) | community votes | V4.5 style-pull scores (`up`/`down`) |
 
-13,777 artists appear in both, giving 17,228 unique rows. Each row records every dataset that
-covers it, so filtering by source stays accurate.
+The bundled asset is ~15.7k artists. About 2.1k have enough nax.moe votes for a strength tier
+(Strong / Solid / Mixed / Weak). **Style pull ≠ popularity:** Danbooru post count is still stored
+for browsing, but suggestions and the default browser sort use the confidence-adjusted nax score.
 
 Preview images are **not** from the artists themselves: they are model-generated samples of what
 each tag produces, and different NovelAI versions render the same tag differently. The NAI v3
@@ -126,11 +129,16 @@ differ. The browser labels the source of every row.
 
 ```bash
 curl -LO https://huggingface.co/datasets/deus-ex-machina/novelai-anime-v3-artist-comparison/resolve/main/artists.json
-curl -LO https://raw.githubusercontent.com/ThetaCursed/Illustrious-NoobAI-Style-Explorer/main/app/data.js
+# Optional uniqueness seed (ThetaCursed live data.js may 404; a saved copy works)
+# curl -LO …/data.js
+
+curl -L https://nax.moe/downloads/tags.zip -o tags.zip
+unzip -o tags.zip tags.json
 
 python3 tools/build_catalog.py \
     --nai artists.json \
-    --illustrious data.js \
+    --nax tags.json \
+    --uniqueness-seed uniqueness_seed.json \
     --out app/src/main/assets/catalog/catalog.db
 ```
 
@@ -198,7 +206,7 @@ checked against a SHA-256 before being unpacked.
 
 ## Testing
 
-137 unit tests, all runnable on the JVM with `./gradlew testDebugUnitTest`. Robolectric is used
+146 unit tests, all runnable on the JVM with `./gradlew testDebugUnitTest`. Robolectric is used
 where a real SQLite database matters, so the catalog, user database, backup and pack code are
 exercised against real storage rather than mocks.
 

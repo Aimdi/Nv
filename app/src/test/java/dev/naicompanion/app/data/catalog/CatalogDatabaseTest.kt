@@ -57,14 +57,49 @@ class CatalogDatabaseTest {
             assertThat(row.preview).isNotNull()
             assertThat(row.sources).startsWith("|")
             assertThat(row.sources).endsWith("|")
+            // nax columns may be null (unrated) but the fields must deserialize
+            if (row.naxVotes != null) {
+                assertThat(row.naxUp).isNotNull()
+                assertThat(row.naxDown).isNotNull()
+                assertThat(row.naxScore).isEqualTo(row.naxUp!! - row.naxDown!!)
+            }
         }
     }
 
     @Test
-    fun `default sort returns the most used artists first`() = runTest {
+    fun `default sort ranks by V4_5 community strength not post count`() = runTest {
         val rows = dao.search(CatalogQueryBuilder.build(CatalogQuery(limit = 50)))
-        val counts = rows.map { it.postCount }
-        assertThat(counts).isInOrder(compareByDescending<Int> { it })
+        assertThat(rows).isNotEmpty()
+        // The top of a strength ranking must be rated; high-post weak artists should not lead.
+        assertThat(rows.first().naxVotes).isNotNull()
+        assertThat(rows.first().naxScore!!).isAtLeast(15)
+        val firstPostCountLeader = dao.search(
+            CatalogQueryBuilder.build(CatalogQuery(sort = CatalogSort.POST_COUNT_DESC, limit = 1)),
+        ).first()
+        assertThat(rows.first().name).isNotEqualTo(firstPostCountLeader.name)
+    }
+
+    @Test
+    fun `strong only filter hides weak and unrated artists`() = runTest {
+        val rows = dao.search(
+            CatalogQueryBuilder.build(
+                CatalogQuery(strengthFilter = StrengthFilter.STRONG_ONLY, limit = 500),
+            ),
+        )
+        assertThat(rows).isNotEmpty()
+        rows.forEach {
+            assertThat(it.naxVotes!!).isAtLeast(3)
+            assertThat(it.naxScore!!).isAtLeast(15)
+        }
+    }
+
+    @Test
+    fun `wlop may be popular but strength ranking can differ`() = runTest {
+        val byStrength = dao.search(CatalogQueryBuilder.build(CatalogQuery(text = "wlop")))
+        assertThat(byStrength.map { it.name }).contains("wlop")
+        val wlop = byStrength.first { it.name == "wlop" }
+        // Presence of vote columns is what matters; the value is community data.
+        assertThat(wlop.naxScore != null || wlop.naxVotes == null).isTrue()
     }
 
     @Test
