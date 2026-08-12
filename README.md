@@ -20,7 +20,7 @@ Android application id: `com.aimdi.nv`
 ### From Aimdi (wired into the generator)
 - **Chip Composer** — app bar **CHIPS**, prompt-area shortcut, or **Tools → NV CHIPS**. Opens with your current main prompt as reorderable weighted chips (`{}` / `[]` / `w::tag::`, `artist:`), local + live Danbooru suggestions. **Send to generator** / **Append** writes straight back into the home prompt.
 - **Artist Browser** — app bar **ARTISTS**, prompt-area shortcut, or **Tools → NV ARTISTS**. Offline artist tags with on-demand SFW HuggingFace previews; default sort is **V4.5 style pull** (nax.moe votes), not Danbooru post count. Long-press or **Add to generator prompt** appends `artist:name`.
-- **MIX ARTISTS** — quality mixer: curated seed triples + **nax.moe V4.5 style-pull** sampling (weak tags demoted; unrated fall back to mid-band log(count)). Replaces previous artist tags, keeps characters, emits mostly `artist:a, artist:b, artist:c`.
+- **MIX ARTISTS** — quality mixer: curated seed triples + **nax.moe V4.5 style-pull** sampling (weak tags demoted; unrated fall back to mid-band log(count)). Replaces previous artist tags, keeps characters, emits numeric hierarchy like `1.1::artist:a::, 0.8::artist:b::, 0.7::artist:c::` (cleaner than `{}` / `[]`).
 
 ## Requirements
 
