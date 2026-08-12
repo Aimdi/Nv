@@ -3,17 +3,18 @@ import 'dart:math' as math;
 
 import 'package:flutter/services.dart' show rootBundle;
 
+import 'artist_strength.dart';
+
 /// Quality-aware NovelAI artist mixer.
 ///
-/// Why the old mixer felt terrible: it shuffled the top-1000 by post count into
-/// 4–7 heavily weighted `drawn by` tags. Community-good mixes are usually
-/// **3 lightly weighted, style-compatible artists**, often mid-count mixers
-/// (not mega-popular generic tags).
+/// Why older mixers felt terrible: they shuffled top Danbooru post-count tags
+/// into heavy `drawn by` stacks. Popularity ≠ style pull on NovelAI V4.5.
 ///
 /// Algorithm:
 /// 1. ~40% emit a curated seed triple (coolv3-style).
 /// 2. Otherwise pick a style bucket, one lead + 2 supports from mid-count bands
-///    with log(count) sampling and a glue/mixer bias.
+///    with **nax.moe V4.5 style-pull** sampling (log(count) fallback when unrated)
+///    and a glue/mixer bias. Weak-rated tags are demoted.
 /// 3. Format mostly plain `artist:name` with mild optional lead emphasis.
 class ArtistMixEngine {
   ArtistMixEngine._();
@@ -136,22 +137,22 @@ class ArtistMixEngine {
 
     final all = byNorm.values
         .where((c) => !_isBanned(c.name))
-        .where((c) => c.count >= 150)
+        .where((c) => c.strength != ArtistStrength.weak)
+        .where((c) => c.count >= 150 || c.strengthRank.isFinite)
         .toList();
     if (all.isEmpty) return '';
 
     final glueNorm = cat.glue.map(canonicalName).toSet();
-    final leadPool = all
-        .where((c) => c.count >= 250 && c.count <= 2800)
-        .where(inBucket)
+    // Prefer Solid+ artists when enough exist; otherwise keep mid-count bands.
+    final ratedSolid = all
+        .where((c) =>
+            c.strength == ArtistStrength.strong ||
+            c.strength == ArtistStrength.solid)
         .toList();
-    final leadFallback = all.where((c) => c.count >= 250 && c.count <= 2800).toList();
-    final supportPool = all
-        .where((c) => c.count >= 150 && c.count <= 1600)
-        .where(inBucket)
-        .toList();
-    final supportFallback =
-        all.where((c) => c.count >= 150 && c.count <= 1600).toList();
+    final leadPool = _leadPool(all, ratedSolid).where(inBucket).toList();
+    final leadFallback = _leadPool(all, ratedSolid);
+    final supportPool = _supportPool(all, ratedSolid).where(inBucket).toList();
+    final supportFallback = _supportPool(all, ratedSolid);
     final gluePool = all
         .where((c) => glueNorm.contains(canonicalName(c.name)))
         .where(inBucket)
@@ -258,13 +259,38 @@ class ArtistMixEngine {
     return parts.join(', ');
   }
 
+  static List<ArtistCandidate> _leadPool(
+    List<ArtistCandidate> all,
+    List<ArtistCandidate> ratedSolid,
+  ) {
+    if (ratedSolid.length >= 12) {
+      return ratedSolid
+          .where((c) => c.count <= 8000)
+          .toList();
+    }
+    return all.where((c) => c.count >= 250 && c.count <= 2800).toList();
+  }
+
+  static List<ArtistCandidate> _supportPool(
+    List<ArtistCandidate> all,
+    List<ArtistCandidate> ratedSolid,
+  ) {
+    if (ratedSolid.length >= 12) {
+      return ratedSolid.where((c) => c.count <= 5000).toList();
+    }
+    return all.where((c) => c.count >= 150 && c.count <= 1600).toList();
+  }
+
   static ArtistCandidate? _weightedPick(List<ArtistCandidate> pool, math.Random rng) {
     if (pool.isEmpty) return null;
     var total = 0.0;
     final weights = <double>[];
     for (final c in pool) {
-      // log bias: mid-count artists compete fairly with slightly higher ones.
-      final w = math.max(1.0, math.log(c.count + 1.0));
+      final w = artistSampleWeight(
+        postCount: c.count,
+        naxScore: c.naxScore,
+        naxVotes: c.naxVotes,
+      );
       weights.add(w);
       total += w;
     }
@@ -419,9 +445,20 @@ class ArtistMixEngine {
 }
 
 class ArtistCandidate {
-  const ArtistCandidate({required this.name, required this.count});
+  const ArtistCandidate({
+    required this.name,
+    required this.count,
+    this.naxScore,
+    this.naxVotes,
+  });
+
   final String name;
   final int count;
+  final int? naxScore;
+  final int? naxVotes;
+
+  ArtistStrength get strength => ArtistStrength.fromVotes(naxScore, naxVotes);
+  double get strengthRank => strengthRankScore(naxScore, naxVotes);
 }
 
 class ArtistMixCatalog {

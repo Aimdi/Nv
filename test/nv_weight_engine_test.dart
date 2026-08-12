@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:naiweaver/core/prompt/artist_mix_engine.dart';
+import 'package:naiweaver/core/prompt/artist_strength.dart';
 import 'package:naiweaver/core/prompt/weight_engine.dart';
 import 'package:naiweaver/core/services/nv_enrichment.dart';
 
@@ -41,21 +42,21 @@ void main() {
 
     setUp(() {
       candidates = const [
-        ArtistCandidate(name: 'xaxaxa', count: 196),
-        ArtistCandidate(name: 'zankuro', count: 818),
-        ArtistCandidate(name: 'stanley lau', count: 606),
-        ArtistCandidate(name: 'kedama milk', count: 629),
-        ArtistCandidate(name: 'modare', count: 810),
-        ArtistCandidate(name: 'ohisashiburi', count: 1479),
-        ArtistCandidate(name: 'ningen mame', count: 351),
-        ArtistCandidate(name: 'ateoyh', count: 565),
-        ArtistCandidate(name: 'memeh', count: 158),
-        ArtistCandidate(name: 'cyancapsule', count: 349),
-        ArtistCandidate(name: 'goto p', count: 736),
-        ArtistCandidate(name: 'shimhaq', count: 318),
-        ArtistCandidate(name: 'sciamano240', count: 899),
-        ArtistCandidate(name: r'rei \(sanbonzakura\)', count: 585),
-        ArtistCandidate(name: 'ebifurya', count: 5842),
+        ArtistCandidate(name: 'xaxaxa', count: 196, naxScore: 20, naxVotes: 30),
+        ArtistCandidate(name: 'zankuro', count: 818, naxScore: 18, naxVotes: 28),
+        ArtistCandidate(name: 'stanley lau', count: 606, naxScore: 12, naxVotes: 22),
+        ArtistCandidate(name: 'kedama milk', count: 629, naxScore: 16, naxVotes: 24),
+        ArtistCandidate(name: 'modare', count: 810, naxScore: 14, naxVotes: 20),
+        ArtistCandidate(name: 'ohisashiburi', count: 1479, naxScore: 10, naxVotes: 18),
+        ArtistCandidate(name: 'ningen mame', count: 351, naxScore: 9, naxVotes: 16),
+        ArtistCandidate(name: 'ateoyh', count: 565, naxScore: 8, naxVotes: 14),
+        ArtistCandidate(name: 'memeh', count: 158, naxScore: 6, naxVotes: 12),
+        ArtistCandidate(name: 'cyancapsule', count: 349, naxScore: 7, naxVotes: 15),
+        ArtistCandidate(name: 'goto p', count: 736, naxScore: 11, naxVotes: 19),
+        ArtistCandidate(name: 'shimhaq', count: 318, naxScore: 13, naxVotes: 21),
+        ArtistCandidate(name: 'sciamano240', count: 899, naxScore: 102, naxVotes: 138),
+        ArtistCandidate(name: r'rei \(sanbonzakura\)', count: 585, naxScore: 15, naxVotes: 25),
+        ArtistCandidate(name: 'ebifurya', count: 5842, naxScore: -8, naxVotes: 20),
         ArtistCandidate(name: 'banned artist', count: 84474),
       ];
       catalog = ArtistMixCatalog.fromJson({
@@ -195,6 +196,36 @@ void main() {
       expect(
         ArtistMixEngine.promptName(r'rei \(sanbonzakura\)'),
         'rei (sanbonzakura)',
+      );
+    });
+
+    test('generative mixes avoid weak-rated high-post artists', () {
+      final emptySeeds = ArtistMixCatalog.fromJson({
+        'glue': ['xaxaxa', 'zankuro'],
+        'buckets': {
+          'anime': ['xaxaxa', 'zankuro', 'modare', 'ohisashiburi', 'ningen mame'],
+        },
+        'triples': <Map<String, dynamic>>[],
+      });
+      for (var seed = 0; seed < 25; seed++) {
+        final mix = ArtistMixEngine.buildMix(
+          candidates,
+          random: Random(seed),
+          catalog: emptySeeds,
+        );
+        expect(mix.toLowerCase(), isNot(contains('ebifurya')));
+      }
+    });
+  });
+
+  group('ArtistStrength', () {
+    test('tiers and bayesian rank prefer high-vote scores', () {
+      expect(ArtistStrength.fromVotes(20, 25), ArtistStrength.strong);
+      expect(ArtistStrength.fromVotes(-5, 8), ArtistStrength.weak);
+      expect(ArtistStrength.fromVotes(100, 2), ArtistStrength.unknown);
+      expect(
+        strengthRankScore(5, 40),
+        greaterThan(strengthRankScore(5, 3)),
       );
     });
   });

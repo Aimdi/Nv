@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/prompt/artist_strength.dart';
 import '../../../core/prompt/weight_engine.dart';
 import '../../../core/services/nv_enrichment.dart';
 import '../../../core/services/tag_service.dart';
@@ -24,7 +25,8 @@ class _ArtistBrowserPanelState extends State<ArtistBrowserPanel> {
   final _queryController = TextEditingController();
   String _query = '';
   bool _onlinePreviews = true;
-  _ArtistSort _sort = _ArtistSort.postCountDesc;
+  bool _hideWeak = true;
+  _ArtistSort _sort = _ArtistSort.stylePullDesc;
 
   @override
   void dispose() {
@@ -37,8 +39,15 @@ class _ArtistBrowserPanelState extends State<ArtistBrowserPanel> {
     var list = tagService.tags
         .where((t) => t.typeName.toLowerCase() == 'artist')
         .where((t) => q.isEmpty || t.tag.toLowerCase().contains(q))
+        .where((t) => !_hideWeak || t.strength != ArtistStrength.weak)
         .toList();
     switch (_sort) {
+      case _ArtistSort.stylePullDesc:
+        list.sort((a, b) {
+          final byStrength = b.strengthRank.compareTo(a.strengthRank);
+          if (byStrength != 0) return byStrength;
+          return b.count.compareTo(a.count);
+        });
       case _ArtistSort.postCountDesc:
         list.sort((a, b) => b.count.compareTo(a.count));
       case _ArtistSort.nameAsc:
@@ -100,8 +109,9 @@ class _ArtistBrowserPanelState extends State<ArtistBrowserPanel> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Aimdi artist picker with HuggingFace SFW previews. Tap a card '
-                'for details, or long-press to add artist:name to the generator.',
+                'Sorted by NovelAI V4.5 style pull (nax.moe votes), not Danbooru '
+                'popularity. Strong = changes the look. Tap a card for details, '
+                'or long-press to add artist:name.',
                 style: TextStyle(color: t.secondaryText, fontSize: t.fontSize(12)),
               ),
               const SizedBox(height: 12),
@@ -119,9 +129,16 @@ class _ArtistBrowserPanelState extends State<ArtistBrowserPanel> {
                 runSpacing: 4,
                 children: [
                   ChoiceChip(
-                    label: const Text('Works'),
+                    label: const Text('Style pull'),
+                    selected: _sort == _ArtistSort.stylePullDesc,
+                    onSelected: (_) =>
+                        setState(() => _sort = _ArtistSort.stylePullDesc),
+                  ),
+                  ChoiceChip(
+                    label: const Text('Posts'),
                     selected: _sort == _ArtistSort.postCountDesc,
-                    onSelected: (_) => setState(() => _sort = _ArtistSort.postCountDesc),
+                    onSelected: (_) =>
+                        setState(() => _sort = _ArtistSort.postCountDesc),
                   ),
                   ChoiceChip(
                     label: const Text('Name'),
@@ -132,6 +149,11 @@ class _ArtistBrowserPanelState extends State<ArtistBrowserPanel> {
                     label: const Text('Random'),
                     selected: _sort == _ArtistSort.random,
                     onSelected: (_) => setState(() => _sort = _ArtistSort.random),
+                  ),
+                  FilterChip(
+                    label: const Text('Hide weak'),
+                    selected: _hideWeak,
+                    onSelected: (v) => setState(() => _hideWeak = v),
                   ),
                   FilterChip(
                     label: const Text('Online previews'),
@@ -194,7 +216,25 @@ class _ArtistBrowserPanelState extends State<ArtistBrowserPanel> {
                 ),
               ),
               const SizedBox(height: 8),
-              Text('${artist.count} posts', style: TextStyle(color: t.secondaryText)),
+              Text(
+                _artistMetaLine(artist),
+                style: TextStyle(color: t.secondaryText),
+              ),
+              if (artist.strength != ArtistStrength.unknown) ...[
+                const SizedBox(height: 4),
+                Text(
+                  artist.strength == ArtistStrength.strong ||
+                          artist.strength == ArtistStrength.solid
+                      ? 'Style pull on V4.5 — usually works near neutral weight.'
+                      : artist.strength == ArtistStrength.weak
+                          ? 'Weak style pull on V4.5 — prefer a Solid/Strong tag.'
+                          : 'Mixed V4.5 results — pair with a stronger artist.',
+                  style: TextStyle(
+                    color: t.secondaryText,
+                    fontSize: t.fontSize(12),
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               if (_onlinePreviews)
                 AspectRatio(
@@ -275,7 +315,7 @@ class _ArtistCard extends StatelessWidget {
                     style: TextStyle(fontSize: t.fontSize(12), fontWeight: FontWeight.w600),
                   ),
                   Text(
-                    '${artist.count} posts · long-press to add',
+                    '${_artistMetaLine(artist)} · long-press to add',
                     style: TextStyle(fontSize: t.fontSize(10), color: t.secondaryText),
                   ),
                 ],
@@ -286,6 +326,15 @@ class _ArtistCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _artistMetaLine(DanbooruTag artist) {
+  final strength = artist.strength;
+  if (strength == ArtistStrength.unknown || artist.naxScore == null) {
+    return '${artist.count} posts · unrated V4.5';
+  }
+  final signed = artist.naxScore! > 0 ? '+${artist.naxScore}' : '${artist.naxScore}';
+  return '${strength.shortLabel} $signed · ${artist.count} posts';
 }
 
 /// Tries each URL until one loads. Times out hung requests so cards never
@@ -416,4 +465,4 @@ class _FallbackNetworkImageState extends State<_FallbackNetworkImage> {
   }
 }
 
-enum _ArtistSort { postCountDesc, nameAsc, random }
+enum _ArtistSort { stylePullDesc, postCountDesc, nameAsc, random }
