@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../features/generation/providers/generation_notifier.dart';
 import '../../features/tools/tools_hub_screen.dart';
 import '../prompt/artist_mix_engine.dart';
+import '../services/nax_strength_service.dart';
 import '../services/tag_service.dart';
 
 /// Bridges Aimdi chip/artist tools into the NAIWeaver generation prompt.
@@ -30,12 +31,15 @@ class NvPromptBridge {
     );
   }
 
-  /// Ensure curated mix catalog is loaded (safe to call repeatedly).
+  /// Ensure curated mix catalog + nax strength table are loaded.
   static Future<void> ensureMixCatalog() async {
     if (_catalogLoading) return;
     _catalogLoading = true;
     try {
-      await ArtistMixEngine.loadCatalog();
+      await Future.wait([
+        ArtistMixEngine.loadCatalog(),
+        NaxStrengthCatalog.load(),
+      ]);
     } finally {
       _catalogLoading = false;
     }
@@ -79,8 +83,8 @@ class NvPromptBridge {
 
   /// Replace previous artist tags with a quality-aware mix.
   ///
-  /// Keeps characters. Uses curated seed triples + mid-band log sampling
-  /// instead of shuffling top post-count artists.
+  /// Keeps characters. Uses curated seed triples + nax.moe V4.5 style-pull
+  /// sampling instead of shuffling top Danbooru post-count artists.
   static void addRandomArtists(BuildContext context) {
     ensureMixCatalog();
     final tagService = context.read<TagService>();
@@ -106,9 +110,18 @@ class NvPromptBridge {
         .map((t) => t.tag)
         .toSet();
     final artistNames = artistTags.map((t) => t.tag).toSet();
-    final candidates = artistTags
-        .map((t) => ArtistCandidate(name: t.tag, count: t.count))
-        .toList();
+    final nax = NaxStrengthCatalog.instance;
+    final candidates = artistTags.map((t) {
+      final entry = t.naxScore != null
+          ? null
+          : nax.lookup(t.tag);
+      return ArtistCandidate(
+        name: t.tag,
+        count: t.count,
+        naxScore: t.naxScore ?? entry?.score,
+        naxVotes: t.naxVotes ?? entry?.votes,
+      );
+    }).toList();
 
     final next = ArtistMixEngine.replaceArtistsInPrompt(
       gen.promptController.text,
@@ -120,7 +133,7 @@ class NvPromptBridge {
 
     _writePrompt(context, next, append: false);
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      const SnackBar(content: Text('Applied a quality artist mix')),
+      const SnackBar(content: Text('Applied a V4.5 style-pull artist mix')),
     );
   }
 

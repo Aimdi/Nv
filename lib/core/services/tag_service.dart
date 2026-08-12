@@ -3,6 +3,9 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
+import '../prompt/artist_strength.dart';
+import 'nax_strength_service.dart';
+
 class DanbooruTag {
   final String tag;
   final int count;
@@ -11,6 +14,10 @@ class DanbooruTag {
   final List<String> examplePaths;
   final List<String> aliases;
   final String? matchedAlias;
+
+  /// nax.moe V4.5 community style-pull score (up - down). Null = unrated.
+  final int? naxScore;
+  final int? naxVotes;
 
   /// For `typeName == 'saved_character'`: the pre-expanded tag string inserted
   /// at the cursor when this suggestion is picked. The default `expansion`
@@ -38,7 +45,13 @@ class DanbooruTag {
     this.expansion,
     this.flatExpansion,
     this.negativeExpansion,
+    this.naxScore,
+    this.naxVotes,
   });
+
+  ArtistStrength get strength => ArtistStrength.fromVotes(naxScore, naxVotes);
+
+  double get strengthRank => strengthRankScore(naxScore, naxVotes);
 
   DanbooruTag copyWith({
     String? tag,
@@ -51,6 +64,8 @@ class DanbooruTag {
     String? Function()? expansion,
     String? Function()? flatExpansion,
     String? Function()? negativeExpansion,
+    int? Function()? naxScore,
+    int? Function()? naxVotes,
   }) {
     return DanbooruTag(
       tag: tag ?? this.tag,
@@ -63,6 +78,8 @@ class DanbooruTag {
       expansion: expansion != null ? expansion() : this.expansion,
       flatExpansion: flatExpansion != null ? flatExpansion() : this.flatExpansion,
       negativeExpansion: negativeExpansion != null ? negativeExpansion() : this.negativeExpansion,
+      naxScore: naxScore != null ? naxScore() : this.naxScore,
+      naxVotes: naxVotes != null ? naxVotes() : this.naxVotes,
     );
   }
 
@@ -80,6 +97,8 @@ class DanbooruTag {
               ?.map((e) => e as String)
               .toList() ??
           const [],
+      naxScore: (json['nax_score'] as num?)?.toInt(),
+      naxVotes: (json['nax_votes'] as num?)?.toInt(),
     );
   }
 
@@ -127,7 +146,8 @@ class TagService {
       if (kIsWeb) {
         final content = await rootBundle.loadString('Tags/high-frequency-tags-list.json');
         _tags = await compute(_parseTags, content);
-        _tags.sort((a, b) => b.count.compareTo(a.count));
+        await _applyNaxStrength();
+        _tags.sort(_compareForSuggestions);
         _tagSet = null;
         _buildAliasIndex();
         _isLoaded = true;
@@ -142,8 +162,9 @@ class TagService {
       // Using compute for heavy JSON parsing to keep UI responsive
       _tags = await compute(_parseTags, await file.readAsString());
 
-      // Sort tags by count descending for faster suggestion ranking
-      _tags.sort((a, b) => b.count.compareTo(a.count));
+      await _applyNaxStrength();
+      // Artists prefer V4.5 style-pull; everything else stays post-count ordered.
+      _tags.sort(_compareForSuggestions);
 
       _tagSet = null;
       _buildAliasIndex();
@@ -152,6 +173,34 @@ class TagService {
     } catch (e) {
       debugPrint("Error loading tags: $e");
     }
+  }
+
+  Future<void> _applyNaxStrength() async {
+    await NaxStrengthCatalog.load();
+    final catalog = NaxStrengthCatalog.instance;
+    if (catalog.size == 0) return;
+    _tags = _tags.map((tag) {
+      if (tag.typeName.toLowerCase() != 'artist') return tag;
+      final entry = catalog.lookup(tag.tag);
+      if (entry == null) return tag;
+      return tag.copyWith(
+        naxScore: () => entry.score,
+        naxVotes: () => entry.votes,
+      );
+    }).toList();
+  }
+
+  /// Favorites first; artists by nax style-pull; otherwise Danbooru count.
+  static int _compareForSuggestions(DanbooruTag a, DanbooruTag b) {
+    if (a.isFavorite && !b.isFavorite) return -1;
+    if (!a.isFavorite && b.isFavorite) return 1;
+    final aArtist = a.typeName.toLowerCase() == 'artist';
+    final bArtist = b.typeName.toLowerCase() == 'artist';
+    if (aArtist && bArtist) {
+      final byStrength = b.strengthRank.compareTo(a.strengthRank);
+      if (byStrength != 0) return byStrength;
+    }
+    return b.count.compareTo(a.count);
   }
 
   void _buildAliasIndex() {
@@ -217,16 +266,9 @@ class TagService {
       }
     }
 
-    // Sort each group: favorites first, then by count
-    int compareTag(DanbooruTag a, DanbooruTag b) {
-      if (a.isFavorite && !b.isFavorite) return -1;
-      if (!a.isFavorite && b.isFavorite) return 1;
-      return b.count.compareTo(a.count);
-    }
-
-    prefixMatches.sort(compareTag);
-    wordMatches.sort(compareTag);
-    aliasMatches.sort(compareTag);
+    prefixMatches.sort(_compareForSuggestions);
+    wordMatches.sort(_compareForSuggestions);
+    aliasMatches.sort(_compareForSuggestions);
 
     return [...prefixMatches, ...wordMatches, ...aliasMatches].take(limit).toList();
   }
@@ -283,15 +325,9 @@ class TagService {
       }
     }
 
-    int compareTag(DanbooruTag a, DanbooruTag b) {
-      if (a.isFavorite && !b.isFavorite) return -1;
-      if (!a.isFavorite && b.isFavorite) return 1;
-      return b.count.compareTo(a.count);
-    }
-
-    prefixMatches.sort(compareTag);
-    wordMatches.sort(compareTag);
-    aliasMatches.sort(compareTag);
+    prefixMatches.sort(_compareForSuggestions);
+    wordMatches.sort(_compareForSuggestions);
+    aliasMatches.sort(_compareForSuggestions);
 
     return [...prefixMatches, ...wordMatches, ...aliasMatches].take(limit).toList();
   }
@@ -403,7 +439,7 @@ class TagService {
 
   Future<void> addTag(DanbooruTag tag) async {
     _tags.add(tag);
-    _tags.sort((a, b) => b.count.compareTo(a.count));
+    _tags.sort(_compareForSuggestions);
     await saveTags();
   }
 

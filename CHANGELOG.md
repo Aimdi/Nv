@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.0.5
+
+### Improved
+- **Artist suggestions use V4.5 style pull, not Danbooru fame.** Bundled [nax.moe](https://nax.moe) community votes power Strong/Solid/Mixed/Weak tiers. Artist Browser defaults to **Style pull**, can **Hide weak**, and shows score badges. Autocomplete ranks artist hits by confidence-adjusted nax score. **MIX ARTISTS** samples by style pull (weak tags demoted; unrated keep the mid-band log(count) prior).
+
 ## v0.9.2
 
 ### New
