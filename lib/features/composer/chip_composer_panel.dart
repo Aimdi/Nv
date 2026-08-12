@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/prompt/artist_strength.dart';
 import '../../../core/prompt/weight_engine.dart';
+import '../../../core/services/nax_strength_service.dart';
 import '../../../core/services/nv_enrichment.dart';
 import '../../../core/services/tag_service.dart';
 import '../../../core/theme/theme_extensions.dart';
@@ -116,8 +118,20 @@ class _ChipComposerPanelState extends State<ChipComposerPanel> {
       setState(() => _message = '"${suggestion.displayName}" is already in the combo');
       return;
     }
+    double? numericWeight;
+    if (suggestion.kind == TagKind.artist) {
+      final entry = NaxStrengthCatalog.instance.lookup(suggestion.name);
+      final strength = ArtistStrength.fromVotes(entry?.score, entry?.votes);
+      numericWeight = strength.primaryEmphasis;
+    }
     setState(() {
-      _chips.add(TagChip(tag: suggestion.name, kind: suggestion.kind));
+      _chips.add(
+        TagChip(
+          tag: suggestion.name,
+          kind: suggestion.kind,
+          numericWeight: numericWeight,
+        ),
+      );
       _queryController.clear();
       _suggestions = const [];
       _message = null;

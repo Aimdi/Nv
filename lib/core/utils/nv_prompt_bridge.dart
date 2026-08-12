@@ -133,7 +133,11 @@ class NvPromptBridge {
 
     _writePrompt(context, next, append: false);
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      const SnackBar(content: Text('Applied a V4.5 style-pull artist mix')),
+      const SnackBar(
+        content: Text(
+          'Applied V4.5 style-pull mix (1.1:: lead, 0.8:: supports)',
+        ),
+      ),
     );
   }
 

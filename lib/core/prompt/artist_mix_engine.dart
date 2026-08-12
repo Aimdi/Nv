@@ -224,7 +224,10 @@ class ArtistMixEngine {
     return _formatMix(picked.map((c) => c.name).toList(), random: rng);
   }
 
-  /// Community-style formatting: mostly plain `artist:` with mild hierarchy.
+  /// V4+ numeric hierarchy: lead above 1.0, supports below 1.0.
+  ///
+  /// Prefer `1.1::artist:x::, 0.8::artist:y::` over `{…}` / `[…]` —
+  /// braces/brackets only step by ×/÷1.05 and get hard to read.
   static String _formatMix(
     List<String> artists, {
     math.Random? random,
@@ -234,29 +237,29 @@ class ArtistMixEngine {
     final rng = random ?? math.Random();
     final names = artists.map(promptName).toList();
 
-    final recipe = preferSeedStyle ? rng.nextDouble() * 0.7 : rng.nextDouble();
-    if (recipe < 0.62) {
-      // Plain triple — the coolv3 default.
-      return names.map((n) => 'artist:$n').join(', ');
-    }
-    if (recipe < 0.84) {
-      // Mild lead emphasis.
-      final parts = <String>['{artist:${names.first}}'];
-      for (var i = 1; i < names.length; i++) {
-        parts.add('artist:${names[i]}');
-      }
-      return parts.join(', ');
-    }
-    // One weakened support for balance.
-    final parts = <String>['artist:${names.first}'];
-    for (var i = 1; i < names.length; i++) {
-      if (i == names.length - 1) {
-        parts.add('[artist:${names[i]}]');
-      } else {
-        parts.add('artist:${names[i]}');
-      }
+    // Mild recipe jitter so mixes don't all look identical.
+    final lead = preferSeedStyle
+        ? (rng.nextBool() ? 1.1 : 1.15)
+        : (rng.nextDouble() < 0.35 ? 1.15 : 1.1);
+    final support = rng.nextDouble() < 0.4 ? 0.85 : 0.8;
+    final accent = rng.nextDouble() < 0.5 ? 0.7 : 0.75;
+
+    final parts = <String>[];
+    for (var i = 0; i < names.length; i++) {
+      final weight = switch (i) {
+        0 => lead,
+        1 => support,
+        _ => accent,
+      };
+      parts.add('${_formatWeight(weight)}::artist:${names[i]}::');
     }
     return parts.join(', ');
+  }
+
+  static String _formatWeight(double weight) {
+    if (weight == weight.roundToDouble()) return weight.toInt().toString();
+    final text = weight.toStringAsFixed(2);
+    return text.replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
   }
 
   static List<ArtistCandidate> _leadPool(

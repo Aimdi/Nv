@@ -27,6 +27,29 @@ enum ArtistStrength {
     if (score <= -3) return ArtistStrength.weak;
     return ArtistStrength.mixed;
   }
+
+  /// Default numeric emphasis when adding as a primary style tag.
+  ///
+  /// NovelAI V4+ prefers `1.1::artist:name::` over `{artist:name}` —
+  /// braces only multiply by 1.05 per nesting and get hard to read.
+  double get primaryEmphasis => switch (this) {
+        ArtistStrength.strong => 1.1,
+        ArtistStrength.solid => 1.1,
+        ArtistStrength.mixed => 1.15,
+        ArtistStrength.weak => 1.2,
+        ArtistStrength.unknown => 1.1,
+      };
+
+  /// Numeric deemphasis when adding as a support / accent artist.
+  ///
+  /// Prefer `0.8::artist:name::` over `[artist:name]` (brackets ≈ ÷1.05).
+  double get supportEmphasis => switch (this) {
+        ArtistStrength.strong => 0.85,
+        ArtistStrength.solid => 0.8,
+        ArtistStrength.mixed => 0.75,
+        ArtistStrength.weak => 0.7,
+        ArtistStrength.unknown => 0.8,
+      };
 }
 
 /// Bayesian shrinkage toward zero: `score * votes / (votes + prior)`.

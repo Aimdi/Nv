@@ -58,14 +58,20 @@ class _ArtistBrowserPanelState extends State<ArtistBrowserPanel> {
     return list.take(200).toList();
   }
 
-  String? _renderArtist(DanbooruTag artist) {
+  String? _renderArtist(DanbooruTag artist, {required bool asSupport}) {
     return WeightEngine.renderEntry(
-      TagChip(tag: artist.tag, kind: TagKind.artist),
+      TagChip(
+        tag: artist.tag,
+        kind: TagKind.artist,
+        numericWeight: asSupport
+            ? artist.strength.supportEmphasis
+            : artist.strength.primaryEmphasis,
+      ),
     );
   }
 
-  Future<void> _copyArtist(DanbooruTag artist) async {
-    final rendered = _renderArtist(artist);
+  Future<void> _copyArtist(DanbooruTag artist, {bool asSupport = false}) async {
+    final rendered = _renderArtist(artist, asSupport: asSupport);
     if (rendered == null) return;
     await Clipboard.setData(ClipboardData(text: rendered));
     if (!mounted) return;
@@ -74,14 +80,16 @@ class _ArtistBrowserPanelState extends State<ArtistBrowserPanel> {
     );
   }
 
-  void _addToPrompt(DanbooruTag artist) {
-    final rendered = _renderArtist(artist);
+  void _addToPrompt(DanbooruTag artist, {bool asSupport = false}) {
+    final rendered = _renderArtist(artist, asSupport: asSupport);
     if (rendered == null) return;
     NvPromptBridge.applyToMainPrompt(
       context,
       rendered,
       append: true,
-      snackbar: 'Added $rendered to the main prompt',
+      snackbar: asSupport
+          ? 'Added support $rendered'
+          : 'Added $rendered to the main prompt',
     );
   }
 
@@ -110,8 +118,8 @@ class _ArtistBrowserPanelState extends State<ArtistBrowserPanel> {
               const SizedBox(height: 8),
               Text(
                 'Sorted by NovelAI V4.5 style pull (nax.moe votes), not Danbooru '
-                'popularity. Strong = changes the look. Tap a card for details, '
-                'or long-press to add artist:name.',
+                'popularity. Long-press adds 1.1::artist:name:: (numeric emphasis, '
+                'cleaner than {}). Details can also add a weaker 0.8:: support.',
                 style: TextStyle(color: t.secondaryText, fontSize: t.fontSize(12)),
               ),
               const SizedBox(height: 12),
@@ -242,13 +250,36 @@ class _ArtistBrowserPanelState extends State<ArtistBrowserPanel> {
                   child: _FallbackNetworkImage(urls: urls, fit: BoxFit.contain),
                 ),
               const SizedBox(height: 12),
+              Text(
+                'V4+ numeric emphasis: ${artist.strength.primaryEmphasis}::…:: '
+                'boosts (~{ } but exact); ${artist.strength.supportEmphasis}::…:: '
+                'softens (~[ ] but exact).',
+                style: TextStyle(
+                  color: t.secondaryText,
+                  fontSize: t.fontSize(12),
+                ),
+              ),
+              const SizedBox(height: 12),
               FilledButton.icon(
                 onPressed: () {
                   Navigator.pop(context);
                   _addToPrompt(artist);
                 },
                 icon: const Icon(Icons.add),
-                label: const Text('Add to generator prompt'),
+                label: Text(
+                  'Add ${artist.strength.primaryEmphasis}:: primary',
+                ),
+              ),
+              const SizedBox(height: 8),
+              FilledButton.tonalIcon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _addToPrompt(artist, asSupport: true);
+                },
+                icon: const Icon(Icons.add),
+                label: Text(
+                  'Add ${artist.strength.supportEmphasis}:: support',
+                ),
               ),
               const SizedBox(height: 8),
               OutlinedButton.icon(
@@ -257,7 +288,7 @@ class _ArtistBrowserPanelState extends State<ArtistBrowserPanel> {
                   _copyArtist(artist);
                 },
                 icon: const Icon(Icons.copy),
-                label: const Text('Copy artist: tag'),
+                label: const Text('Copy weighted artist tag'),
               ),
               const SizedBox(height: 12),
             ],
@@ -315,7 +346,8 @@ class _ArtistCard extends StatelessWidget {
                     style: TextStyle(fontSize: t.fontSize(12), fontWeight: FontWeight.w600),
                   ),
                   Text(
-                    '${_artistMetaLine(artist)} · long-press to add',
+                    '${_artistMetaLine(artist)} · long-press → '
+                    '${artist.strength.primaryEmphasis}::',
                     style: TextStyle(fontSize: t.fontSize(10), color: t.secondaryText),
                   ),
                 ],

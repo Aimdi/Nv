@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.0.6
+
+### Improved
+- **Artists always use V4+ numeric emphasis.** Browser long-press / primary add inserts `1.1::artist:name::` (exact weight — better than `{artist:name}` ≈ ×1.05). Detail sheet also offers a weaker support insert (`0.8::…::`, better than `[…]`). **MIX ARTISTS** emits the same hierarchy (`1.1::` lead, `0.8::` / `0.7::` supports) instead of braces/brackets.
+
 ## v1.0.5
 
 ### Improved

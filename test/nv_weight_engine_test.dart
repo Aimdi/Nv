@@ -140,7 +140,10 @@ void main() {
       expect(mix!, contains('artist:'));
       expect(mix.toLowerCase(), contains('modare'));
       expect(RegExp(r'artist:').allMatches(mix).length, greaterThanOrEqualTo(2));
-      // No chaotic drawn-by / heavy numeric spam.
+      // V4 numeric hierarchy, not brace/bracket spam or drawn-by stacks.
+      expect(RegExp(r'\d+(?:\.\d+)?::artist:').hasMatch(mix), isTrue);
+      expect(mix.contains('{'), isFalse);
+      expect(mix.contains('['), isFalse);
       expect(mix.toLowerCase().contains('drawn by'), isFalse);
     });
 
@@ -172,8 +175,12 @@ void main() {
         expect(mix.toLowerCase(), isNot(contains('banned')));
         final artistCount = RegExp(r'artist:').allMatches(mix).length;
         expect(artistCount, inInclusiveRange(2, 5));
-        // Prefer plain artist: hierarchy over heavy numeric spam.
-        expect(RegExp(r'1\.[3-9]::').hasMatch(mix), isFalse);
+        expect(RegExp(r'\d+(?:\.\d+)?::artist:').allMatches(mix).length, artistCount);
+        // Lead is mildly above 1; supports stay below 1. No brace leftovers.
+        expect(RegExp(r'1\.(?:1|15)::artist:').hasMatch(mix), isTrue);
+        expect(RegExp(r'0\.\d+::artist:').hasMatch(mix), isTrue);
+        expect(mix.contains('{'), isFalse);
+        expect(mix.contains('['), isFalse);
       }
     });
 
@@ -227,6 +234,16 @@ void main() {
         strengthRankScore(5, 40),
         greaterThan(strengthRankScore(5, 3)),
       );
+    });
+
+    test('primary emphasis is above 1 and support is below 1', () {
+      for (final tier in ArtistStrength.values) {
+        expect(tier.primaryEmphasis, greaterThan(1.0));
+        expect(tier.supportEmphasis, lessThan(1.0));
+        expect(tier.supportEmphasis, greaterThan(0.0));
+      }
+      expect(ArtistStrength.strong.primaryEmphasis, 1.1);
+      expect(ArtistStrength.solid.supportEmphasis, 0.8);
     });
   });
 }
