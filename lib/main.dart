@@ -778,6 +778,18 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
                 ),
               ),
               TextButton(
+                onPressed: () => NvPromptBridge.openStyleFromImage(context),
+                child: Text(
+                  'STYLE',
+                  style: TextStyle(
+                    color: t.accent,
+                    fontSize: t.fontSize(mobile ? 11 : 8),
+                    letterSpacing: 2,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              TextButton(
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -1303,6 +1315,17 @@ class _SimpleGeneratorAppState extends State<SimpleGeneratorApp> with SingleTick
                     onPressed: () => NvPromptBridge.addRandomArtists(context),
                     icon: Icon(Icons.casino, size: mobile ? 14 : 12, color: t.accent),
                     label: Text('MIX ARTISTS', style: style),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
+                  Text('·', style: muted),
+                  TextButton.icon(
+                    onPressed: () => NvPromptBridge.openStyleFromImage(context),
+                    icon: Icon(Icons.image_search, size: mobile ? 14 : 12, color: t.accent),
+                    label: Text('STYLE FROM IMAGE', style: style),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
                       minimumSize: Size.zero,
