@@ -107,7 +107,7 @@ class _StyleFromImagePanelState extends State<StyleFromImagePanel> {
           'It reads ink vs paint, saturation, and contrast (not subject color), '
           'then plans a lead / mixer / accent. If the lead sits in a '
           'community-tested triple, that mix wins over invented neighbors. '
-          'Source IDs (NovelAI PNG or Danbooru) still beat guesses.'
+          'Source IDs (NovelAI PNG or Danbooru) still beat guesses.',
           style: TextStyle(color: t.secondaryText, fontSize: t.fontSize(12)),
         ),
         const SizedBox(height: 16),
