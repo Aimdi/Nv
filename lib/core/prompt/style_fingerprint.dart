@@ -3,22 +3,131 @@ import 'dart:typed_data';
 
 import 'package:image/image.dart' as img;
 
-/// Compact visual signature for “which NAI artist preview looks like this”.
+import 'artist_strength.dart';
+
+enum StyleMatchSource { metadata, iqdb, visual }
+
+class StyleMatchHit {
+  const StyleMatchHit({
+    required this.name,
+    required this.score,
+    required this.source,
+    this.naxScore,
+    this.naxVotes,
+    this.detail,
+  });
+
+  final String name;
+  final double score;
+  final StyleMatchSource source;
+  final int? naxScore;
+  final int? naxVotes;
+  final String? detail;
+
+  ArtistStrength get strength => ArtistStrength.fromVotes(naxScore, naxVotes);
+}
+
+class StyleFingerprintEntry {
+  const StyleFingerprintEntry({
+    required this.tag,
+    required this.vector,
+    this.naxScore,
+    this.naxVotes,
+    this.edge,
+    this.satMean,
+    this.contrast,
+  });
+
+  final String tag;
+  final List<double> vector;
+  final int? naxScore;
+  final int? naxVotes;
+  final double? edge;
+  final double? satMean;
+  final double? contrast;
+
+  ArtistStrength get strength => ArtistStrength.fromVotes(naxScore, naxVotes);
+}
+
+/// How an image is *rendered*, not what is in it.
 ///
-/// Not CLIP — hue / value / line-density stats. Useful because nax V4.5
-/// constrained previews hold the subject still, so the leftover differences
-/// are mostly rendering (palette, contrast, linework).
+/// Hue / mean RGB are dropped on purpose: nax V4.5 previews all show the same
+/// orange-hoodie girl, so matching those channels just finds “similar clothes.”
+class StyleProfile {
+  const StyleProfile({
+    required this.vector,
+    required this.satMean,
+    required this.contrast,
+    required this.edge,
+    required this.colorfulness,
+    required this.warmth,
+    required this.brightness,
+  });
+
+  /// L2-normalized style-only vector used for nearest-neighbor.
+  final List<double> vector;
+  final double satMean;
+  final double contrast;
+  final double edge;
+  final double colorfulness;
+  final double warmth;
+  final double brightness;
+
+  String get family {
+    if (edge >= 0.11 && satMean < 0.32) return 'sketchy';
+    if (edge >= 0.10 && contrast >= 0.16) return 'cel-shaded';
+    if (edge < 0.075 && satMean >= 0.28) return 'painterly';
+    if (satMean < 0.22) return 'muted';
+    if (satMean >= 0.48) return 'vibrant';
+    return 'balanced';
+  }
+
+  /// Hint for seed_mixes buckets.
+  String get bucketHint {
+    if (family == 'muted' || (warmth < 0.35 && satMean < 0.30)) return 'western';
+    if (family == 'cel-shaded' || family == 'sketchy') return 'anime';
+    if (family == 'vibrant' && edge >= 0.08) return 'cartoony';
+    if (family == 'painterly') return 'western';
+    return 'anime';
+  }
+
+  String get summary {
+    final tone = warmth >= 0.58
+        ? 'warm'
+        : warmth <= 0.42
+            ? 'cool'
+            : 'neutral';
+    final lines = edge >= 0.11
+        ? 'crisp linework'
+        : edge <= 0.07
+            ? 'soft edges'
+            : 'moderate linework';
+    return '$family, $tone grade, $lines';
+  }
+
+  List<String> get observations {
+    final out = <String>[
+      'Saturation ${satMean.toStringAsFixed(2)} — '
+          '${satMean >= 0.45 ? 'punchy color' : satMean <= 0.25 ? 'restrained / greyed' : 'moderate color'}',
+      'Contrast ${contrast.toStringAsFixed(2)} — '
+          '${contrast >= 0.20 ? 'hard lighting / graphic' : contrast <= 0.10 ? 'flat / even' : 'natural range'}',
+      'Line density ${edge.toStringAsFixed(2)} — '
+          '${edge >= 0.11 ? 'inked / cel' : edge <= 0.07 ? 'painted / blended' : 'mixed'}',
+    ];
+    return out;
+  }
+}
+
+/// Style-only fingerprint: saturation/value shape + contrast + line density.
 class StyleFingerprint {
-  static const size = 48;
-  static const hueBins = 12;
+  static const size = 64;
   static const satBins = 6;
   static const valBins = 6;
-  static const dimensions = hueBins + satBins + valBins + 6;
+  static const dimensions = satBins + valBins + 4;
 
   StyleFingerprint._();
 
-  /// Decode [bytes] and return an L2-normalized [dimensions]-vector, or null.
-  static List<double>? compute(Uint8List bytes) {
+  static StyleProfile? analyze(Uint8List bytes) {
     final decoded = img.decodeImage(bytes);
     if (decoded == null) return null;
     final small = img.copyResize(
@@ -30,12 +139,13 @@ class StyleFingerprint {
     return fromImage(small);
   }
 
-  static List<double> fromImage(img.Image image) {
-    final hue = List<double>.filled(hueBins, 0);
-    final sat = List<double>.filled(satBins, 0);
-    final val = List<double>.filled(valBins, 0);
-    var sumR = 0.0, sumG = 0.0, sumB = 0.0;
-    var sumS = 0.0, sumV = 0.0, sumV2 = 0.0;
+  /// Back-compat for tests that still call [compute].
+  static List<double>? compute(Uint8List bytes) => analyze(bytes)?.vector;
+
+  static StyleProfile fromImage(img.Image image) {
+    final satHist = List<double>.filled(satBins, 0);
+    final valHist = List<double>.filled(valBins, 0);
+    var sumS = 0.0, sumV = 0.0, sumV2 = 0.0, sumWarm = 0.0, sumChroma = 0.0;
     var edge = 0.0;
     var count = 0;
 
@@ -50,22 +160,24 @@ class StyleFingerprint {
         final g = p.g / 255.0;
         final b = p.b / 255.0;
         final hsv = rgbToHsv(r, g, b);
-        hue[_bin(hsv[0] / 360.0, hueBins)] += 1;
-        sat[_bin(hsv[1], satBins)] += 1;
-        val[_bin(hsv[2], valBins)] += 1;
-        sumR += r;
-        sumG += g;
-        sumB += b;
+        satHist[_bin(hsv[1], satBins)] += 1;
+        valHist[_bin(hsv[2], valBins)] += 1;
         sumS += hsv[1];
         sumV += hsv[2];
         sumV2 += hsv[2] * hsv[2];
+        sumChroma += hsv[1] * hsv[2];
+        // Warmth: red-yellow vs blue-cyan, ignoring near-greys.
+        if (hsv[1] > 0.12) {
+          final hue = hsv[0];
+          final warm = hue < 70 || hue > 320 ? 1.0 : (hue > 160 && hue < 260 ? 0.0 : 0.5);
+          sumWarm += warm * hsv[1];
+        }
         gray[y * w + x] = 0.299 * r + 0.587 * g + 0.114 * b;
         count++;
       }
     }
 
-    if (count == 0) return List<double>.filled(dimensions, 0);
-
+    final n = math.max(1, count).toDouble();
     for (var y = 0; y < h - 1; y++) {
       for (var x = 0; x < w - 1; x++) {
         final i = y * w + x;
@@ -74,23 +186,32 @@ class StyleFingerprint {
         edge += math.sqrt(dx * dx + dy * dy);
       }
     }
-    final edgeCount = (w - 1) * (h - 1);
-    final n = count.toDouble();
-    final meanV = sumV / n;
-    final varV = math.max(0.0, sumV2 / n - meanV * meanV);
+    final edgeCount = math.max(1, (w - 1) * (h - 1));
+    final satMean = sumS / n;
+    final brightness = sumV / n;
+    final contrast = math.sqrt(math.max(0.0, sumV2 / n - brightness * brightness));
+    final colorfulness = sumChroma / n;
+    final warmth = (sumS < 1e-6) ? 0.5 : (sumWarm / sumS).clamp(0.0, 1.0);
+    final edgeMean = edge / edgeCount;
 
     final raw = <double>[
-      ...hue.map((v) => v / n),
-      ...sat.map((v) => v / n),
-      ...val.map((v) => v / n),
-      sumR / n,
-      sumG / n,
-      sumB / n,
-      sumS / n,
-      math.sqrt(varV),
-      edge / edgeCount,
+      ...satHist.map((v) => v / n),
+      ...valHist.map((v) => v / n),
+      satMean,
+      contrast,
+      edgeMean,
+      colorfulness,
     ];
-    return l2Normalize(raw);
+
+    return StyleProfile(
+      vector: l2Normalize(raw),
+      satMean: satMean,
+      contrast: contrast,
+      edge: edgeMean,
+      colorfulness: colorfulness,
+      warmth: warmth,
+      brightness: brightness,
+    );
   }
 
   static List<double> rgbToHsv(double r, double g, double b) {

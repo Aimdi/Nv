@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.0.8
+
+### Improved
+- **Style from image actually plans a mix.** It reads the picture first (line density, saturation, contrast — not the orange hoodie in the nax previews), then picks a lead / mixer / accent with a reason for each. Source IDs (NovelAI PNG or Danbooru IQDB) still win. The UI shows **HOW IT READ THIS** and **WHY THIS MIX** before the prompt string. Nearby fingerprints that were not used show up as **ALSO CONSIDERED**, not as the mix itself.
+
 ## v1.0.7
 
 ### New

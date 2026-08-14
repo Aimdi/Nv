@@ -16,7 +16,7 @@ import '../../core/utils/nv_prompt_bridge.dart';
 import '../gallery/providers/gallery_notifier.dart';
 import '../generation/providers/generation_notifier.dart';
 
-/// Pick an image → source artists (metadata / IQDB) + V4.5 look-alike mix.
+/// Pick an image → read the rendering, then plan a lead / mixer / accent.
 class StyleFromImagePanel extends StatefulWidget {
   const StyleFromImagePanel({super.key, this.initialBytes});
 
@@ -104,11 +104,10 @@ class _StyleFromImagePanelState extends State<StyleFromImagePanel> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Hard problem, honest labels. If the PNG is a known Danbooru post or a '
-          'NovelAI export, we can recover the real artist tags. Otherwise we '
-          'compare rendering (palette / contrast / linework) to nax.moe V4.5 '
-          'artist previews and suggest a 1.1:: / 0.8:: mix — a look-alike, '
-          'not a citation.',
+          'It reads the image first (line vs paint, saturation, contrast), then '
+          'plans a lead / mixer / accent. Source IDs (NovelAI PNG or Danbooru) '
+          'win over guesses. Visual picks ignore subject color so they do not '
+          'just match the orange hoodie in the nax previews.',
           style: TextStyle(color: t.secondaryText, fontSize: t.fontSize(12)),
         ),
         const SizedBox(height: 16),
@@ -160,7 +159,7 @@ class _StyleFromImagePanelState extends State<StyleFromImagePanel> {
           const Center(child: CircularProgressIndicator()),
           const SizedBox(height: 8),
           Text(
-            'Matching metadata, Danbooru IQDB, and V4.5 previews…',
+            'Reading the image, then planning a mix…',
             textAlign: TextAlign.center,
             style: TextStyle(color: t.secondaryText, fontSize: t.fontSize(12)),
           ),
@@ -186,9 +185,46 @@ class _ReportView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.t;
+    final plan = report.plan;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (plan != null) ...[
+          Text('HOW IT READ THIS', style: _sectionStyle(t)),
+          const SizedBox(height: 6),
+          Text(
+            plan.brief.summary,
+            style: TextStyle(fontSize: t.fontSize(14), fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 6),
+          ...plan.brief.observations.map(
+            (line) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                line,
+                style: TextStyle(color: t.secondaryText, fontSize: t.fontSize(12)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text('WHY THIS MIX', style: _sectionStyle(t)),
+          const SizedBox(height: 6),
+          ...plan.picks.map((pick) {
+            final role = switch (pick.role) {
+              MixRole.lead => 'Lead',
+              MixRole.support => 'Support',
+              MixRole.accent => 'Accent',
+            };
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                '$role ${ArtistMixEngine.promptName(pick.name)} — ${pick.reason}',
+                style: TextStyle(fontSize: t.fontSize(12)),
+              ),
+            );
+          }),
+          const SizedBox(height: 16),
+        ],
         if (report.mix.isNotEmpty) ...[
           Text('SUGGESTED MIX', style: _sectionStyle(t)),
           const SizedBox(height: 8),
@@ -201,7 +237,7 @@ class _ReportView extends StatelessWidget {
             onPressed: () => NvPromptBridge.applyToMainPrompt(
               context,
               report.mix,
-              snackbar: 'Applied look-alike artist mix',
+              snackbar: 'Applied planned artist mix',
             ),
             icon: const Icon(Icons.auto_awesome),
             label: const Text('Apply mix to generator'),
@@ -211,7 +247,7 @@ class _ReportView extends StatelessWidget {
             onPressed: () => NvPromptBridge.appendInPlace(
               context,
               report.mix,
-              snackbar: 'Appended look-alike artist mix',
+              snackbar: 'Appended planned artist mix',
             ),
             icon: const Icon(Icons.add),
             label: const Text('Append mix'),
@@ -231,11 +267,11 @@ class _ReportView extends StatelessWidget {
           const SizedBox(height: 16),
         ],
         if (report.visualHits.isNotEmpty) ...[
-          Text('V4.5 LOOK-ALIKES', style: _sectionStyle(t)),
+          Text('ALSO CONSIDERED', style: _sectionStyle(t)),
           const SizedBox(height: 4),
           Text(
-            'Nearest nax.moe V4.5 preview fingerprints. Similar rendering, '
-            'not proof of authorship.',
+            'Nearby V4.5 renderings that were not used in the mix. '
+            'Similar line/paint, not proof of authorship.',
             style: TextStyle(color: t.secondaryText, fontSize: t.fontSize(11)),
           ),
           const SizedBox(height: 8),

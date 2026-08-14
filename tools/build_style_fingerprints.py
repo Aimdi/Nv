@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""Build compact visual fingerprints for nax.moe V4.5 artist previews.
+"""Build compact *style-only* fingerprints for nax.moe V4.5 artist previews.
 
 Matches lib/core/prompt/style_fingerprint.dart so query-time Dart cosine
 search uses the same space.
+
+Hue and mean RGB are intentionally omitted: nax V4.5 constrained previews
+all show the same orange-hoodie girl, so those channels just match clothes.
 """
 from __future__ import annotations
 
 import argparse
 import json
 import math
-import os
 import sys
 import urllib.parse
 import urllib.request
@@ -18,10 +20,10 @@ from pathlib import Path
 
 from PIL import Image
 
-SIZE = 48
-HUE_BINS = 12
+SIZE = 64
 SAT_BINS = 6
 VAL_BINS = 6
+DIMS = SAT_BINS + VAL_BINS + 4
 GALLERY = "danbooru-artist-tags-v4.5"
 CDN = f"https://cdn.zele.st/data/NAX/Images/{GALLERY}"
 
@@ -56,27 +58,23 @@ def l2_normalize(vec: list[float]) -> list[float]:
     return [x / norm for x in vec]
 
 
-def fingerprint(path: Path) -> list[float]:
+def fingerprint(path: Path) -> dict[str, object]:
     with Image.open(path) as im:
         rgb = im.convert("RGB").resize((SIZE, SIZE), Image.Resampling.BOX)
         pixels = list(rgb.getdata())
-    hue = [0.0] * HUE_BINS
     sat = [0.0] * SAT_BINS
     val = [0.0] * VAL_BINS
-    sum_r = sum_g = sum_b = sum_s = sum_v = sum_v2 = 0.0
+    sum_s = sum_v = sum_v2 = sum_chroma = 0.0
     gray = []
     for r8, g8, b8 in pixels:
         r, g, b = r8 / 255.0, g8 / 255.0, b8 / 255.0
-        h, s, v = rgb_to_hsv(r, g, b)
-        hue[bin_index(h / 360.0, HUE_BINS)] += 1
+        _h, s, v = rgb_to_hsv(r, g, b)
         sat[bin_index(s, SAT_BINS)] += 1
         val[bin_index(v, VAL_BINS)] += 1
-        sum_r += r
-        sum_g += g
-        sum_b += b
         sum_s += s
         sum_v += v
         sum_v2 += v * v
+        sum_chroma += s * v
         gray.append(0.299 * r + 0.587 * g + 0.114 * b)
     n = float(len(pixels))
     edge = 0.0
@@ -88,15 +86,22 @@ def fingerprint(path: Path) -> list[float]:
             dy = gray[i + w] - gray[i]
             edge += math.sqrt(dx * dx + dy * dy)
     edge_count = (w - 1) * (h - 1)
+    sat_mean = sum_s / n
     mean_v = sum_v / n
-    var_v = max(0.0, sum_v2 / n - mean_v * mean_v)
+    contrast = math.sqrt(max(0.0, sum_v2 / n - mean_v * mean_v))
+    colorfulness = sum_chroma / n
+    edge_mean = edge / edge_count
     raw = (
-        [x / n for x in hue]
-        + [x / n for x in sat]
+        [x / n for x in sat]
         + [x / n for x in val]
-        + [sum_r / n, sum_g / n, sum_b / n, sum_s / n, math.sqrt(var_v), edge / edge_count]
+        + [sat_mean, contrast, edge_mean, colorfulness]
     )
-    return l2_normalize(raw)
+    return {
+        "v": l2_normalize(raw),
+        "edge": edge_mean,
+        "sat": sat_mean,
+        "contrast": contrast,
+    }
 
 
 def normalize_tag(tag: str) -> str:
@@ -126,7 +131,7 @@ def fetch(url: str, dest: Path) -> bool:
     if dest.exists() and dest.stat().st_size > 1000:
         return True
     dest.parent.mkdir(parents=True, exist_ok=True)
-    req = urllib.request.Request(url, headers={"User-Agent": "NvFingerprintBuilder/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "NvFingerprintBuilder/1.0.8"})
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
             dest.write_bytes(resp.read())
@@ -210,7 +215,7 @@ def main() -> int:
         if not dest.exists() or dest.stat().st_size < 1000:
             continue
         try:
-            vec = fingerprint(dest)
+            fp = fingerprint(dest)
         except Exception as exc:
             print(f"skip {tag}: {exc}", file=sys.stderr)
             continue
@@ -219,15 +224,18 @@ def main() -> int:
                 "tag": tag,
                 "s": rec.get("s"),
                 "votes": rec.get("v"),
-                "v": [round(x, 6) for x in vec],
+                "edge": round(float(fp["edge"]), 6),
+                "sat": round(float(fp["sat"]), 6),
+                "contrast": round(float(fp["contrast"]), 6),
+                "v": [round(x, 6) for x in fp["v"]],
             }
         )
 
     out = {
-        "version": 1,
-        "source": "nax.moe V4.5 constrained artist previews",
+        "version": 2,
+        "source": "nax.moe V4.5 constrained artist previews (style-only)",
         "gallery": GALLERY,
-        "dims": HUE_BINS + SAT_BINS + VAL_BINS + 6,
+        "dims": DIMS,
         "artists": artists,
     }
     dest = Path(args.out)
