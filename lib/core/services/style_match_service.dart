@@ -74,7 +74,10 @@ class StyleFingerprintIndex {
           .whereType<num>()
           .map((n) => n.toDouble())
           .toList();
-      if (tag.isEmpty || vec.length < 8) continue;
+      if (tag.isEmpty) continue;
+      if (vec.length < 6 && data['edge'] == null && data['sat'] == null) {
+        continue;
+      }
       entries.add(
         StyleFingerprintEntry(
           tag: tag,
@@ -82,7 +85,10 @@ class StyleFingerprintIndex {
           naxScore: (data['s'] as num?)?.toInt(),
           naxVotes: (data['votes'] as num?)?.toInt(),
           edge: (data['edge'] as num?)?.toDouble(),
+          fine: (data['fine'] as num?)?.toDouble(),
+          strong: (data['strong'] as num?)?.toDouble(),
           satMean: (data['sat'] as num?)?.toDouble(),
+          satVar: (data['satVar'] as num?)?.toDouble(),
           contrast: (data['contrast'] as num?)?.toDouble(),
         ),
       );
@@ -92,17 +98,18 @@ class StyleFingerprintIndex {
 
   int get size => entries.length;
 
-  List<StyleMatchHit> query(List<double> vector, {int limit = 12}) {
+  List<StyleMatchHit> query(StyleProfile profile, {int limit = 12}) {
     final scored = <StyleMatchHit>[];
     for (final entry in entries) {
-      final cos = StyleFingerprint.cosine(vector, entry.vector);
+      final fit = profile.fitTo(entry);
       scored.add(
         StyleMatchHit(
           name: entry.tag,
-          score: cos,
+          score: fit,
           source: StyleMatchSource.visual,
           naxScore: entry.naxScore,
           naxVotes: entry.naxVotes,
+          detail: 'Δ ${profile.distanceTo(entry).toStringAsFixed(2)}',
         ),
       );
     }
@@ -117,7 +124,7 @@ class StyleMatchService {
 
   final Dio _dio;
 
-  static const _userAgent = 'Nv/1.0.8 (https://github.com/Aimdi/Nv; style-from-image)';
+  static const _userAgent = 'Nv/1.0.9 (https://github.com/Aimdi/Nv; style-from-image)';
 
   Future<StyleMatchReport> match(Uint8List bytes) async {
     await Future.wait([
@@ -161,7 +168,7 @@ class StyleMatchService {
         for (final pick in plan.picks) ArtistMixEngine.canonicalName(pick.name),
       };
       visualHits.addAll(
-        StyleFingerprintIndex.instance.query(profile.vector, limit: 12).where(
+        StyleFingerprintIndex.instance.query(profile, limit: 12).where(
               (h) => !used.contains(ArtistMixEngine.canonicalName(h.name)),
             ),
       );

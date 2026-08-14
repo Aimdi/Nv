@@ -199,7 +199,7 @@ List<_Feature> _getFeatures(AppLocalizations l) => [
   _Feature('Artist Browser', 'Aimdi artist picker with HuggingFace previews — add artist: tags to generate', (ctx) {
     Navigator.push(ctx, MaterialPageRoute(builder: (_) => const ToolsHubScreen(initialToolId: 'artist_browser')));
   }),
-  _Feature('Style from image', 'Read line vs paint, then plan a lead / mixer / accent (metadata / IQDB first)', (ctx) {
+  _Feature('Style from image', 'Read ink/sat/contrast, then plan a mix — known triples beat nearest neighbors', (ctx) {
     Navigator.push(ctx, MaterialPageRoute(builder: (_) => const ToolsHubScreen(initialToolId: 'style_from_image')));
   }),
   _Feature(l.helpFeatureGallery, l.helpFeatureGalleryDesc, (ctx) {

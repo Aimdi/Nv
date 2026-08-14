@@ -11,9 +11,9 @@ Uint8List _png(img.Image image) => Uint8List.fromList(img.encodePng(image));
 
 /// High-edge, low-sat checkerboard — reads as sketchy / inked.
 Uint8List _inkedPng() {
-  final image = img.Image(width: 64, height: 64);
-  for (var y = 0; y < 64; y++) {
-    for (var x = 0; x < 64; x++) {
+  final image = img.Image(width: 96, height: 96);
+  for (var y = 0; y < 96; y++) {
+    for (var x = 0; x < 96; x++) {
       final on = ((x ~/ 4) + (y ~/ 4)) % 2 == 0;
       final v = on ? 20 : 230;
       image.setPixelRgb(x, y, v, v, v);
@@ -24,10 +24,10 @@ Uint8List _inkedPng() {
 
 /// Soft saturated wash — reads as painterly.
 Uint8List _painterlyPng() {
-  final image = img.Image(width: 64, height: 64);
-  for (var y = 0; y < 64; y++) {
-    for (var x = 0; x < 64; x++) {
-      final t = y / 63.0;
+  final image = img.Image(width: 96, height: 96);
+  for (var y = 0; y < 96; y++) {
+    for (var x = 0; x < 96; x++) {
+      final t = y / 95.0;
       image.setPixelRgb(
         x,
         y,
@@ -42,7 +42,7 @@ Uint8List _painterlyPng() {
 
 /// Flat grey-green — muted, low edge.
 Uint8List _mutedPng() {
-  final image = img.Image(width: 64, height: 64);
+  final image = img.Image(width: 96, height: 96);
   for (final p in image) {
     p.r = 118;
     p.g = 122;
@@ -63,10 +63,26 @@ StyleFingerprintEntry _entry(
     naxScore: score,
     naxVotes: votes,
     edge: profile.edge,
+    fine: profile.fine,
+    strong: profile.strong,
     satMean: profile.satMean,
+    satVar: profile.satVar,
     contrast: profile.contrast,
   );
 }
+
+Map<String, dynamic> _row(String tag, StyleProfile profile) => {
+      'tag': tag,
+      's': 20,
+      'votes': 30,
+      'v': profile.vector,
+      'edge': profile.edge,
+      'fine': profile.fine,
+      'strong': profile.strong,
+      'sat': profile.satMean,
+      'satVar': profile.satVar,
+      'contrast': profile.contrast,
+    };
 
 void main() {
   test('identical images have cosine ~ 1', () {
@@ -85,16 +101,14 @@ void main() {
     expect(paint.family, 'painterly');
     expect(muted.family, 'muted');
     expect(inked.edge, greaterThan(paint.edge));
+    expect(inked.strong, greaterThan(paint.strong));
     expect(
-      StyleFingerprint.cosine(inked.vector, inked.vector),
-      greaterThan(StyleFingerprint.cosine(inked.vector, paint.vector)),
+      inked.distanceTo(_entry('paint', paint)),
+      greaterThan(StyleFingerprint.cloneDistance),
     );
   });
 
-  test('hue twins are not treated as a style match', () {
-    // Two solids that only differ in hue used to rank as “different styles”
-    // because the old vector stored hue + mean RGB. Style-only space should
-    // see them as almost the same rendering (no linework, flat color).
+  test('hue twins are closer than ink vs paint', () {
     Uint8List solid(int r, int g, int b) {
       final image = img.Image(width: 32, height: 32);
       for (final p in image) {
@@ -107,7 +121,11 @@ void main() {
 
     final red = StyleFingerprint.analyze(solid(220, 40, 40))!;
     final blue = StyleFingerprint.analyze(solid(40, 60, 220))!;
-    expect(StyleFingerprint.cosine(red.vector, blue.vector), greaterThan(0.92));
+    final inked = StyleFingerprint.analyze(_inkedPng())!;
+    expect(
+      red.distanceTo(_entry('blue', blue)),
+      lessThan(inked.distanceTo(_entry('blue', blue))),
+    );
   });
 
   test('extracts artist tags from a NovelAI-style prompt', () {
@@ -156,13 +174,10 @@ void main() {
   });
 
   test('fingerprint index ranks the matching rendering first', () {
-    final inked = StyleFingerprint.compute(_inkedPng())!;
-    final paint = StyleFingerprint.compute(_painterlyPng())!;
+    final inked = StyleFingerprint.analyze(_inkedPng())!;
+    final paint = StyleFingerprint.analyze(_painterlyPng())!;
     final index = StyleFingerprintIndex.fromJson({
-      'artists': [
-        {'tag': 'ink_artist', 's': 20, 'votes': 30, 'v': inked},
-        {'tag': 'paint_artist', 's': 20, 'votes': 30, 'v': paint},
-      ],
+      'artists': [_row('ink_artist', inked), _row('paint_artist', paint)],
     });
     final hits = index.query(inked, limit: 2);
     expect(hits.first.name, 'ink_artist');
@@ -263,5 +278,48 @@ void main() {
     expect(names, contains('mixer_artist'));
     expect(plan.picks.length, greaterThanOrEqualTo(2));
     expect(plan.picks.length, lessThanOrEqualTo(3));
+  });
+
+  test('known seed triple beats invented neighbors', () {
+    final query = StyleFingerprint.analyze(_painterlyPng())!;
+    final paint = StyleFingerprint.analyze(_painterlyPng())!;
+    final inked = StyleFingerprint.analyze(_inkedPng())!;
+    final muted = StyleFingerprint.analyze(_mutedPng())!;
+    final plan = StyleMixPlanner.plan(
+      query: query,
+      sourceHits: const [
+        StyleMatchHit(
+          name: 'sciamano240',
+          score: 1.0,
+          source: StyleMatchSource.metadata,
+          naxScore: 20,
+          naxVotes: 40,
+        ),
+      ],
+      catalog: [
+        _entry('sciamano240', paint),
+        _entry('random_neighbor', paint, score: 30, votes: 50),
+        _entry('rei (sanbonzakura)', muted, score: 12, votes: 20),
+        _entry('shimhaq', inked, score: 10, votes: 18),
+      ],
+      mixCatalog: const ArtistMixCatalog(
+        glue: ['xaxaxa'],
+        buckets: {
+          'western': ['sciamano240', 'rei (sanbonzakura)', 'shimhaq'],
+        },
+        triples: [
+          ArtistMixTriple(
+            style: 'western',
+            artists: ['sciamano240', 'rei (sanbonzakura)', 'shimhaq'],
+          ),
+        ],
+      ),
+    );
+    final names = plan.picks.map((p) => ArtistMixEngine.canonicalName(p.name)).toList();
+    expect(names.first, 'sciamano240');
+    expect(names, contains('rei (sanbonzakura)'));
+    expect(names, contains('shimhaq'));
+    expect(names, isNot(contains('random neighbor')));
+    expect(plan.steps.any((s) => s.contains('community-tested')), isTrue);
   });
 }

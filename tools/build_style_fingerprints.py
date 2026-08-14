@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Build compact *style-only* fingerprints for nax.moe V4.5 artist previews.
 
-Matches lib/core/prompt/style_fingerprint.dart so query-time Dart cosine
-search uses the same space.
+Matches lib/core/prompt/style_fingerprint.dart.
 
-Hue and mean RGB are intentionally omitted: nax V4.5 constrained previews
-all show the same orange-hoodie girl, so those channels just match clothes.
+Ranking is z-distance on ink / texture / sat / contrast. Hue and mean RGB
+are omitted: nax V4.5 constrained previews all show the same orange-hoodie
+girl, and a sat/val histogram of that scene collapses to cosine ≈ 0.99.
 """
 from __future__ import annotations
 
@@ -20,10 +20,14 @@ from pathlib import Path
 
 from PIL import Image
 
-SIZE = 64
-SAT_BINS = 6
-VAL_BINS = 6
-DIMS = SAT_BINS + VAL_BINS + 4
+SIZE = 96
+EDGE_SCALE = 0.015
+FINE_SCALE = 0.006
+STRONG_SCALE = 0.07
+SAT_SCALE = 0.09
+SAT_VAR_SCALE = 0.04
+CONTRAST_SCALE = 0.07
+DIMS = 6
 GALLERY = "danbooru-artist-tags-v4.5"
 CDN = f"https://cdn.zele.st/data/NAX/Images/{GALLERY}"
 
@@ -46,11 +50,6 @@ def rgb_to_hsv(r: float, g: float, b: float) -> tuple[float, float, float]:
     return h, s, mx
 
 
-def bin_index(t: float, bins: int) -> int:
-    i = int(min(max(t, 0.0), 0.999999) * bins)
-    return min(max(i, 0), bins - 1)
-
-
 def l2_normalize(vec: list[float]) -> list[float]:
     norm = math.sqrt(sum(x * x for x in vec))
     if norm < 1e-12:
@@ -62,44 +61,62 @@ def fingerprint(path: Path) -> dict[str, object]:
     with Image.open(path) as im:
         rgb = im.convert("RGB").resize((SIZE, SIZE), Image.Resampling.BOX)
         pixels = list(rgb.getdata())
-    sat = [0.0] * SAT_BINS
-    val = [0.0] * VAL_BINS
-    sum_s = sum_v = sum_v2 = sum_chroma = 0.0
+    w = h = SIZE
     gray = []
+    sum_s = sum_s2 = sum_v = sum_v2 = sum_chroma = 0.0
     for r8, g8, b8 in pixels:
         r, g, b = r8 / 255.0, g8 / 255.0, b8 / 255.0
         _h, s, v = rgb_to_hsv(r, g, b)
-        sat[bin_index(s, SAT_BINS)] += 1
-        val[bin_index(v, VAL_BINS)] += 1
         sum_s += s
+        sum_s2 += s * s
         sum_v += v
         sum_v2 += v * v
         sum_chroma += s * v
         gray.append(0.299 * r + 0.587 * g + 0.114 * b)
     n = float(len(pixels))
     edge = 0.0
-    w = h = SIZE
+    strong = 0.0
     for y in range(h - 1):
         for x in range(w - 1):
             i = y * w + x
             dx = gray[i + 1] - gray[i]
             dy = gray[i + w] - gray[i]
-            edge += math.sqrt(dx * dx + dy * dy)
+            mag = math.sqrt(dx * dx + dy * dy)
+            edge += mag
+            if mag > 0.12:
+                strong += 1
     edge_count = (w - 1) * (h - 1)
+    fine = 0.0
+    for y in range(1, h - 1):
+        for x in range(1, w - 1):
+            i = y * w + x
+            blur = (gray[i - 1] + gray[i + 1] + gray[i - w] + gray[i + w] + gray[i] * 4) / 8
+            fine += abs(gray[i] - blur)
+    fine_count = (w - 2) * (h - 2)
     sat_mean = sum_s / n
+    sat_var = max(0.0, sum_s2 / n - sat_mean * sat_mean)
     mean_v = sum_v / n
     contrast = math.sqrt(max(0.0, sum_v2 / n - mean_v * mean_v))
-    colorfulness = sum_chroma / n
     edge_mean = edge / edge_count
-    raw = (
-        [x / n for x in sat]
-        + [x / n for x in val]
-        + [sat_mean, contrast, edge_mean, colorfulness]
+    strong_ratio = strong / edge_count
+    fine_mean = fine / fine_count
+    vec = l2_normalize(
+        [
+            edge_mean / EDGE_SCALE,
+            fine_mean / FINE_SCALE,
+            strong_ratio / STRONG_SCALE,
+            sat_mean / SAT_SCALE,
+            sat_var / SAT_VAR_SCALE,
+            contrast / CONTRAST_SCALE,
+        ]
     )
     return {
-        "v": l2_normalize(raw),
+        "v": vec,
         "edge": edge_mean,
+        "fine": fine_mean,
+        "strong": strong_ratio,
         "sat": sat_mean,
+        "satVar": sat_var,
         "contrast": contrast,
     }
 
@@ -131,7 +148,7 @@ def fetch(url: str, dest: Path) -> bool:
     if dest.exists() and dest.stat().st_size > 1000:
         return True
     dest.parent.mkdir(parents=True, exist_ok=True)
-    req = urllib.request.Request(url, headers={"User-Agent": "NvFingerprintBuilder/1.0.8"})
+    req = urllib.request.Request(url, headers={"User-Agent": "NvFingerprintBuilder/1.0.9"})
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
             dest.write_bytes(resp.read())
@@ -142,7 +159,6 @@ def fetch(url: str, dest: Path) -> bool:
 
 def candidate_urls(filename: str, tag: str) -> list[str]:
     urls = []
-    # tags.json filenames are often already percent-encoded.
     urls.append(f"{CDN}/{filename}")
     urls.append(f"{CDN}/{urllib.parse.quote(filename, safe='')}")
     raw = tag.replace("_", " ") + ".jpg"
@@ -225,15 +241,18 @@ def main() -> int:
                 "s": rec.get("s"),
                 "votes": rec.get("v"),
                 "edge": round(float(fp["edge"]), 6),
+                "fine": round(float(fp["fine"]), 6),
+                "strong": round(float(fp["strong"]), 6),
                 "sat": round(float(fp["sat"]), 6),
+                "satVar": round(float(fp["satVar"]), 6),
                 "contrast": round(float(fp["contrast"]), 6),
                 "v": [round(x, 6) for x in fp["v"]],
             }
         )
 
     out = {
-        "version": 2,
-        "source": "nax.moe V4.5 constrained artist previews (style-only)",
+        "version": 3,
+        "source": "nax.moe V4.5 constrained artist previews (ink/sat/contrast)",
         "gallery": GALLERY,
         "dims": DIMS,
         "artists": artists,
