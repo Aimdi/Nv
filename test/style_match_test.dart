@@ -4,35 +4,110 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:naiweaver/core/prompt/artist_mix_engine.dart';
 import 'package:naiweaver/core/prompt/style_fingerprint.dart';
+import 'package:naiweaver/core/prompt/style_mix_planner.dart';
 import 'package:naiweaver/core/services/style_match_service.dart';
 
-Uint8List _solidPng({required int r, required int g, required int b}) {
-  final image = img.Image(width: 32, height: 32);
-  for (final p in image) {
-    p.r = r;
-    p.g = g;
-    p.b = b;
+Uint8List _png(img.Image image) => Uint8List.fromList(img.encodePng(image));
+
+/// High-edge, low-sat checkerboard — reads as sketchy / inked.
+Uint8List _inkedPng() {
+  final image = img.Image(width: 64, height: 64);
+  for (var y = 0; y < 64; y++) {
+    for (var x = 0; x < 64; x++) {
+      final on = ((x ~/ 4) + (y ~/ 4)) % 2 == 0;
+      final v = on ? 20 : 230;
+      image.setPixelRgb(x, y, v, v, v);
+    }
   }
-  return Uint8List.fromList(img.encodePng(image));
+  return _png(image);
+}
+
+/// Soft saturated wash — reads as painterly.
+Uint8List _painterlyPng() {
+  final image = img.Image(width: 64, height: 64);
+  for (var y = 0; y < 64; y++) {
+    for (var x = 0; x < 64; x++) {
+      final t = y / 63.0;
+      image.setPixelRgb(
+        x,
+        y,
+        (255 - 40 * t).round(),
+        (140 + 40 * t).round(),
+        (80 + 80 * t).round(),
+      );
+    }
+  }
+  return _png(image);
+}
+
+/// Flat grey-green — muted, low edge.
+Uint8List _mutedPng() {
+  final image = img.Image(width: 64, height: 64);
+  for (final p in image) {
+    p.r = 118;
+    p.g = 122;
+    p.b = 120;
+  }
+  return _png(image);
+}
+
+StyleFingerprintEntry _entry(
+  String tag,
+  StyleProfile profile, {
+  int score = 18,
+  int votes = 40,
+}) {
+  return StyleFingerprintEntry(
+    tag: tag,
+    vector: profile.vector,
+    naxScore: score,
+    naxVotes: votes,
+    edge: profile.edge,
+    satMean: profile.satMean,
+    contrast: profile.contrast,
+  );
 }
 
 void main() {
   test('identical images have cosine ~ 1', () {
-    final bytes = _solidPng(r: 220, g: 80, b: 90);
+    final bytes = _inkedPng();
     final a = StyleFingerprint.compute(bytes);
     final b = StyleFingerprint.compute(bytes);
     expect(a, isNotNull);
     expect(StyleFingerprint.cosine(a!, b!), closeTo(1.0, 1e-6));
   });
 
-  test('very different palettes are less similar than near twins', () {
-    final red = StyleFingerprint.compute(_solidPng(r: 220, g: 40, b: 40))!;
-    final red2 = StyleFingerprint.compute(_solidPng(r: 200, g: 50, b: 45))!;
-    final blue = StyleFingerprint.compute(_solidPng(r: 40, g: 60, b: 220))!;
+  test('linework and painterly washes are different families', () {
+    final inked = StyleFingerprint.analyze(_inkedPng())!;
+    final paint = StyleFingerprint.analyze(_painterlyPng())!;
+    final muted = StyleFingerprint.analyze(_mutedPng())!;
+    expect(inked.family, 'sketchy');
+    expect(paint.family, 'painterly');
+    expect(muted.family, 'muted');
+    expect(inked.edge, greaterThan(paint.edge));
     expect(
-      StyleFingerprint.cosine(red, red2),
-      greaterThan(StyleFingerprint.cosine(red, blue)),
+      StyleFingerprint.cosine(inked.vector, inked.vector),
+      greaterThan(StyleFingerprint.cosine(inked.vector, paint.vector)),
     );
+  });
+
+  test('hue twins are not treated as a style match', () {
+    // Two solids that only differ in hue used to rank as “different styles”
+    // because the old vector stored hue + mean RGB. Style-only space should
+    // see them as almost the same rendering (no linework, flat color).
+    Uint8List solid(int r, int g, int b) {
+      final image = img.Image(width: 32, height: 32);
+      for (final p in image) {
+        p.r = r;
+        p.g = g;
+        p.b = b;
+      }
+      return _png(image);
+    }
+
+    final red = StyleFingerprint.analyze(solid(220, 40, 40))!;
+    final blue = StyleFingerprint.analyze(solid(40, 60, 220))!;
+    expect(StyleFingerprint.cosine(red.vector, blue.vector), greaterThan(0.92));
   });
 
   test('extracts artist tags from a NovelAI-style prompt', () {
@@ -80,17 +155,113 @@ void main() {
     expect(mix.contains('['), isFalse);
   });
 
-  test('fingerprint index ranks the matching artist first', () {
-    final red = StyleFingerprint.compute(_solidPng(r: 210, g: 40, b: 40))!;
-    final blue = StyleFingerprint.compute(_solidPng(r: 40, g: 50, b: 210))!;
+  test('fingerprint index ranks the matching rendering first', () {
+    final inked = StyleFingerprint.compute(_inkedPng())!;
+    final paint = StyleFingerprint.compute(_painterlyPng())!;
     final index = StyleFingerprintIndex.fromJson({
       'artists': [
-        {'tag': 'red_artist', 's': 20, 'votes': 30, 'v': red},
-        {'tag': 'blue_artist', 's': 20, 'votes': 30, 'v': blue},
+        {'tag': 'ink_artist', 's': 20, 'votes': 30, 'v': inked},
+        {'tag': 'paint_artist', 's': 20, 'votes': 30, 'v': paint},
       ],
     });
-    final hits = index.query(red, limit: 2);
-    expect(hits.first.name, 'red_artist');
+    final hits = index.query(inked, limit: 2);
+    expect(hits.first.name, 'ink_artist');
     expect(hits.first.score, greaterThan(hits.last.score));
+  });
+
+  test('planner uses a source ID as lead, not the nearest clone', () {
+    final query = StyleFingerprint.analyze(_inkedPng())!;
+    final paint = StyleFingerprint.analyze(_painterlyPng())!;
+    final catalog = [
+      _entry('visual_twin', query),
+      _entry('mixer_artist', paint, score: 12, votes: 20),
+    ];
+    final plan = StyleMixPlanner.plan(
+      query: query,
+      sourceHits: const [
+        StyleMatchHit(
+          name: 'named_in_png',
+          score: 1.0,
+          source: StyleMatchSource.metadata,
+          naxScore: 18,
+          naxVotes: 40,
+        ),
+      ],
+      catalog: catalog,
+      mixCatalog: const ArtistMixCatalog(
+        glue: ['mixer_artist'],
+        buckets: {
+          'anime': ['mixer_artist'],
+        },
+        triples: [],
+      ),
+    );
+    expect(plan.picks.first.name, 'named_in_png');
+    expect(plan.picks.first.role, MixRole.lead);
+    expect(plan.picks.any((p) => p.name == 'visual_twin'), isFalse);
+    expect(plan.picks.any((p) => p.name == 'mixer_artist'), isTrue);
+    expect(plan.mix, contains('1.1::artist:named in png::'));
+    expect(plan.steps.any((s) => s.contains('source hit')), isTrue);
+  });
+
+  test('weak source hits do not steal the lead', () {
+    final query = StyleFingerprint.analyze(_inkedPng())!;
+    final paint = StyleFingerprint.analyze(_painterlyPng())!;
+    final plan = StyleMixPlanner.plan(
+      query: query,
+      sourceHits: const [
+        StyleMatchHit(
+          name: 'weak_source',
+          score: 1.0,
+          source: StyleMatchSource.iqdb,
+          naxScore: -5,
+          naxVotes: 20,
+        ),
+      ],
+      catalog: [
+        _entry('ink_lead', query),
+        _entry('paint_mixer', paint, score: 10, votes: 20),
+      ],
+      mixCatalog: const ArtistMixCatalog(
+        glue: ['paint_mixer'],
+        buckets: {
+          'anime': ['paint_mixer'],
+        },
+        triples: [],
+      ),
+    );
+    expect(plan.picks.first.name, 'ink_lead');
+    expect(plan.picks.first.role, MixRole.lead);
+    expect(plan.picks.any((p) => p.name == 'weak_source'), isFalse);
+  });
+
+  test('planner does not stack three near-clones as the mix', () {
+    final query = StyleFingerprint.analyze(_inkedPng())!;
+    final paint = StyleFingerprint.analyze(_painterlyPng())!;
+    final muted = StyleFingerprint.analyze(_mutedPng())!;
+    final plan = StyleMixPlanner.plan(
+      query: query,
+      sourceHits: const [],
+      catalog: [
+        _entry('clone_a', query),
+        _entry('clone_b', query, score: 16, votes: 25),
+        _entry('clone_c', query, score: 14, votes: 22),
+        _entry('mixer_artist', paint, score: 12, votes: 20),
+        _entry('accent_artist', muted, score: 10, votes: 18),
+      ],
+      mixCatalog: const ArtistMixCatalog(
+        glue: ['mixer_artist'],
+        buckets: {
+          'anime': ['mixer_artist'],
+        },
+        triples: [],
+      ),
+    );
+    final names = plan.picks.map((p) => p.name).toList();
+    expect(names.first, 'clone_a');
+    expect(names.where((n) => n.startsWith('clone_')).length, 1);
+    expect(names, contains('mixer_artist'));
+    expect(plan.picks.length, greaterThanOrEqualTo(2));
+    expect(plan.picks.length, lessThanOrEqualTo(3));
   });
 }

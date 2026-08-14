@@ -8,30 +8,14 @@ import 'package:image/image.dart' as img;
 import '../prompt/artist_mix_engine.dart';
 import '../prompt/artist_strength.dart';
 import '../prompt/style_fingerprint.dart';
+import '../prompt/style_mix_planner.dart';
+
+export '../prompt/style_fingerprint.dart'
+    show StyleMatchHit, StyleMatchSource, StyleFingerprintEntry, StyleProfile;
+export '../prompt/style_mix_planner.dart'
+    show StyleMixPlan, PlannedPick, MixRole;
 import '../utils/image_utils.dart';
 import 'nax_strength_service.dart';
-
-enum StyleMatchSource { metadata, iqdb, visual }
-
-class StyleMatchHit {
-  const StyleMatchHit({
-    required this.name,
-    required this.score,
-    required this.source,
-    this.naxScore,
-    this.naxVotes,
-    this.detail,
-  });
-
-  final String name;
-  final double score;
-  final StyleMatchSource source;
-  final int? naxScore;
-  final int? naxVotes;
-  final String? detail;
-
-  ArtistStrength get strength => ArtistStrength.fromVotes(naxScore, naxVotes);
-}
 
 class StyleMatchReport {
   const StyleMatchReport({
@@ -39,12 +23,14 @@ class StyleMatchReport {
     required this.visualHits,
     required this.mix,
     required this.notes,
+    this.plan,
   });
 
   final List<StyleMatchHit> sourceHits;
   final List<StyleMatchHit> visualHits;
   final String mix;
   final List<String> notes;
+  final StyleMixPlan? plan;
 
   bool get isEmpty => sourceHits.isEmpty && visualHits.isEmpty && mix.isEmpty;
 }
@@ -95,6 +81,9 @@ class StyleFingerprintIndex {
           vector: StyleFingerprint.l2Normalize(vec),
           naxScore: (data['s'] as num?)?.toInt(),
           naxVotes: (data['votes'] as num?)?.toInt(),
+          edge: (data['edge'] as num?)?.toDouble(),
+          satMean: (data['sat'] as num?)?.toDouble(),
+          contrast: (data['contrast'] as num?)?.toDouble(),
         ),
       );
     }
@@ -122,27 +111,13 @@ class StyleFingerprintIndex {
   }
 }
 
-class StyleFingerprintEntry {
-  const StyleFingerprintEntry({
-    required this.tag,
-    required this.vector,
-    this.naxScore,
-    this.naxVotes,
-  });
-
-  final String tag;
-  final List<double> vector;
-  final int? naxScore;
-  final int? naxVotes;
-}
-
 /// Hybrid: NAI PNG artists + Danbooru IQDB + visual NN on nax V4.5 previews.
 class StyleMatchService {
   StyleMatchService({Dio? dio}) : _dio = dio ?? Dio();
 
   final Dio _dio;
 
-  static const _userAgent = 'Nv/1.0.7 (https://github.com/Aimdi/Nv; style-from-image)';
+  static const _userAgent = 'Nv/1.0.8 (https://github.com/Aimdi/Nv; style-from-image)';
 
   Future<StyleMatchReport> match(Uint8List bytes) async {
     await Future.wait([
@@ -173,37 +148,29 @@ class StyleMatchService {
       notes.add('Danbooru reverse search was unavailable.');
     }
 
+    StyleMixPlan? plan;
     final visualHits = <StyleMatchHit>[];
-    final fp = StyleFingerprint.compute(bytes);
-    if (fp != null && StyleFingerprintIndex.instance.size > 0) {
-      visualHits.addAll(
-        StyleFingerprintIndex.instance.query(fp, limit: 16).where((h) {
-          if (h.strength == ArtistStrength.weak) return false;
-          return h.score >= 0.55;
-        }),
+    final profile = StyleFingerprint.analyze(bytes);
+    if (profile != null && StyleFingerprintIndex.instance.size > 0) {
+      plan = StyleMixPlanner.plan(
+        query: profile,
+        sourceHits: sourceHits,
+        catalog: StyleFingerprintIndex.instance.entries,
       );
-      if (visualHits.isEmpty) {
-        notes.add(
-          'No close visual match in the V4.5 preview index. '
-          'This is a look-alike guess, not a source ID.',
-        );
-        visualHits.addAll(
-          StyleFingerprintIndex.instance.query(fp, limit: 8).where(
-                (h) => h.strength != ArtistStrength.weak,
-              ),
-        );
-      } else {
-        notes.add(
-          'Visual matches compare your image to nax.moe V4.5 artist previews '
-          '(same character, different style). Strong = similar rendering, '
-          'not “this artist drew it”.',
-        );
-      }
-    } else if (fp == null) {
-      notes.add('Could not decode the image for visual matching.');
+      final used = {
+        for (final pick in plan.picks) ArtistMixEngine.canonicalName(pick.name),
+      };
+      visualHits.addAll(
+        StyleFingerprintIndex.instance.query(profile.vector, limit: 12).where(
+              (h) => !used.contains(ArtistMixEngine.canonicalName(h.name)),
+            ),
+      );
+      notes.addAll(plan.steps);
+    } else if (profile == null) {
+      notes.add('Could not decode the image for a style read.');
     }
 
-    final mix = ArtistMixEngine.buildRankedMix(_pickMixNames(sourceHits, visualHits));
+    final mix = plan?.mix ?? '';
     if (mix.isEmpty) {
       notes.add('Not enough artist signal to build a mix.');
     }
@@ -213,38 +180,8 @@ class StyleMatchService {
       visualHits: visualHits,
       mix: mix,
       notes: notes,
+      plan: plan,
     );
-  }
-
-  List<String> _pickMixNames(
-    List<StyleMatchHit> sourceHits,
-    List<StyleMatchHit> visualHits,
-  ) {
-    final names = <String>[];
-    void add(String raw) {
-      final n = ArtistMixEngine.canonicalName(raw);
-      if (n.isEmpty || n == 'banned artist' || n == 'banned_artist') return;
-      if (names.any((e) => ArtistMixEngine.canonicalName(e) == n)) return;
-      names.add(raw);
-    }
-
-    // Prefer a Solid+ source artist as lead when IQDB/metadata actually hit.
-    for (final hit in sourceHits) {
-      if (hit.strength == ArtistStrength.weak) continue;
-      add(hit.name);
-      if (names.length >= 1) break;
-    }
-    for (final hit in visualHits) {
-      add(hit.name);
-      if (names.length >= 3) break;
-    }
-    if (names.length < 2) {
-      for (final hit in sourceHits) {
-        add(hit.name);
-        if (names.length >= 3) break;
-      }
-    }
-    return names.take(3).toList();
   }
 
   /// Public so tests can feed fixtures without hitting the network.
