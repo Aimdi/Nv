@@ -101,6 +101,19 @@ class ArtistMixEngine {
     return _buildGenerativeMix(byNorm, cat, rng);
   }
 
+  /// Deterministic mix from an already-ranked list (style-from-image).
+  static String buildRankedMix(List<String> artists) {
+    if (artists.isEmpty) return '';
+    final names = artists.map(promptName).toList();
+    final weights = [1.1, 0.8, 0.7];
+    final parts = <String>[];
+    for (var i = 0; i < names.length; i++) {
+      final weight = i < weights.length ? weights[i] : 0.7;
+      parts.add('${_formatWeight(weight)}::artist:${names[i]}::');
+    }
+    return parts.join(', ');
+  }
+
   /// Replace existing artist tags with a new quality mix.
   static String replaceArtistsInPrompt(
     String prompt, {

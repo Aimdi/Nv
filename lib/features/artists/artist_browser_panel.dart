@@ -173,6 +173,11 @@ class _ArtistBrowserPanelState extends State<ArtistBrowserPanel> {
                     label: const Text('Mix artists'),
                     onPressed: () => NvPromptBridge.addRandomArtists(context),
                   ),
+                  ActionChip(
+                    avatar: const Icon(Icons.image_search, size: 16),
+                    label: const Text('From image'),
+                    onPressed: () => NvPromptBridge.openStyleFromImage(context),
+                  ),
                 ],
               ),
             ],

@@ -7,12 +7,14 @@ import '../../features/generation/providers/generation_notifier.dart';
 import '../../features/tools/tools_hub_screen.dart';
 import '../prompt/artist_mix_engine.dart';
 import '../services/nax_strength_service.dart';
+import '../services/style_match_service.dart';
 import '../services/tag_service.dart';
 
 /// Bridges Aimdi chip/artist tools into the NAIWeaver generation prompt.
 class NvPromptBridge {
   static const chipComposerToolId = 'chip_composer';
   static const artistBrowserToolId = 'artist_browser';
+  static const styleFromImageToolId = 'style_from_image';
   static bool _catalogLoading = false;
 
   static Future<void> openChipComposer(BuildContext context) {
@@ -31,6 +33,14 @@ class NvPromptBridge {
     );
   }
 
+  static Future<void> openStyleFromImage(BuildContext context) {
+    return Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const ToolsHubScreen(initialToolId: styleFromImageToolId),
+      ),
+    );
+  }
+
   /// Ensure curated mix catalog + nax strength table are loaded.
   static Future<void> ensureMixCatalog() async {
     if (_catalogLoading) return;
@@ -39,6 +49,7 @@ class NvPromptBridge {
       await Future.wait([
         ArtistMixEngine.loadCatalog(),
         NaxStrengthCatalog.load(),
+        StyleFingerprintIndex.load(),
       ]);
     } finally {
       _catalogLoading = false;

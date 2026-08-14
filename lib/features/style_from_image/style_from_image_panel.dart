@@ -1,0 +1,327 @@
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../core/prompt/artist_mix_engine.dart';
+import '../../core/prompt/artist_strength.dart';
+import '../../core/prompt/weight_engine.dart';
+import '../../core/services/nax_strength_service.dart';
+import '../../core/services/nv_enrichment.dart';
+import '../../core/services/style_match_service.dart';
+import '../../core/theme/theme_extensions.dart';
+import '../../core/utils/file_picker_helper.dart';
+import '../../core/utils/nv_prompt_bridge.dart';
+import '../gallery/providers/gallery_notifier.dart';
+import '../generation/providers/generation_notifier.dart';
+
+/// Pick an image → source artists (metadata / IQDB) + V4.5 look-alike mix.
+class StyleFromImagePanel extends StatefulWidget {
+  const StyleFromImagePanel({super.key, this.initialBytes});
+
+  final Uint8List? initialBytes;
+
+  @override
+  State<StyleFromImagePanel> createState() => _StyleFromImagePanelState();
+}
+
+class _StyleFromImagePanelState extends State<StyleFromImagePanel> {
+  final _service = StyleMatchService();
+  Uint8List? _bytes;
+  StyleMatchReport? _report;
+  Object? _error;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialBytes != null) {
+      _bytes = widget.initialBytes;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _analyze());
+    }
+  }
+
+  Future<void> _setBytes(Uint8List bytes) async {
+    setState(() {
+      _bytes = bytes;
+      _report = null;
+      _error = null;
+    });
+    await _analyze();
+  }
+
+  Future<void> _analyze() async {
+    final bytes = _bytes;
+    if (bytes == null || _busy) return;
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final report = await _service.match(bytes);
+      if (!mounted) return;
+      setState(() => _report = report);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _pickFile() async {
+    final result = await pickImageFiles(withData: true);
+    if (result == null || result.files.isEmpty) return;
+    final file = result.files.single;
+    if (file.bytes != null) {
+      await _setBytes(file.bytes!);
+      return;
+    }
+    if (file.path != null) {
+      await _setBytes(await File(file.path!).readAsBytes());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.t;
+    final gen = context.watch<GenerationNotifier>();
+    final gallery = context.watch<GalleryNotifier>();
+    final hasCurrent = gen.state.generatedImage != null;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      children: [
+        Text(
+          'STYLE FROM IMAGE',
+          style: TextStyle(
+            color: t.accent,
+            letterSpacing: 2,
+            fontWeight: FontWeight.bold,
+            fontSize: t.fontSize(12),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Hard problem, honest labels. If the PNG is a known Danbooru post or a '
+          'NovelAI export, we can recover the real artist tags. Otherwise we '
+          'compare rendering (palette / contrast / linework) to nax.moe V4.5 '
+          'artist previews and suggest a 1.1:: / 0.8:: mix — a look-alike, '
+          'not a citation.',
+          style: TextStyle(color: t.secondaryText, fontSize: t.fontSize(12)),
+        ),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            if (hasCurrent)
+              ActionChip(
+                avatar: const Icon(Icons.flash_on, size: 16),
+                label: const Text('Current generation'),
+                onPressed: () => _setBytes(gen.state.generatedImage!),
+              ),
+            ActionChip(
+              avatar: const Icon(Icons.photo_library_outlined, size: 16),
+              label: const Text('Pick image'),
+              onPressed: _pickFile,
+            ),
+            if (gallery.items.isNotEmpty)
+              ActionChip(
+                avatar: const Icon(Icons.collections, size: 16),
+                label: const Text('Latest gallery'),
+                onPressed: () async {
+                  final item = gallery.items.first;
+                  if (await item.file.exists()) {
+                    await _setBytes(await item.file.readAsBytes());
+                  }
+                },
+              ),
+            if (_bytes != null)
+              ActionChip(
+                avatar: const Icon(Icons.refresh, size: 16),
+                label: const Text('Re-analyze'),
+                onPressed: _busy ? null : _analyze,
+              ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (_bytes != null)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: AspectRatio(
+              aspectRatio: 3 / 4,
+              child: Image.memory(_bytes!, fit: BoxFit.contain),
+            ),
+          ),
+        if (_busy) ...[
+          const SizedBox(height: 24),
+          const Center(child: CircularProgressIndicator()),
+          const SizedBox(height: 8),
+          Text(
+            'Matching metadata, Danbooru IQDB, and V4.5 previews…',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: t.secondaryText, fontSize: t.fontSize(12)),
+          ),
+        ],
+        if (_error != null) ...[
+          const SizedBox(height: 16),
+          Text('Match failed: $_error', style: TextStyle(color: t.accent)),
+        ],
+        if (_report != null) ...[
+          const SizedBox(height: 20),
+          _ReportView(report: _report!),
+        ],
+      ],
+    );
+  }
+}
+
+class _ReportView extends StatelessWidget {
+  const _ReportView({required this.report});
+
+  final StyleMatchReport report;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.t;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (report.mix.isNotEmpty) ...[
+          Text('SUGGESTED MIX', style: _sectionStyle(t)),
+          const SizedBox(height: 8),
+          SelectableText(
+            report.mix,
+            style: TextStyle(fontSize: t.fontSize(13), fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          FilledButton.icon(
+            onPressed: () => NvPromptBridge.applyToMainPrompt(
+              context,
+              report.mix,
+              snackbar: 'Applied look-alike artist mix',
+            ),
+            icon: const Icon(Icons.auto_awesome),
+            label: const Text('Apply mix to generator'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () => NvPromptBridge.appendInPlace(
+              context,
+              report.mix,
+              snackbar: 'Appended look-alike artist mix',
+            ),
+            icon: const Icon(Icons.add),
+            label: const Text('Append mix'),
+          ),
+          const SizedBox(height: 20),
+        ],
+        if (report.sourceHits.isNotEmpty) ...[
+          Text('SOURCE / METADATA HITS', style: _sectionStyle(t)),
+          const SizedBox(height: 4),
+          Text(
+            'These came from the file itself or a reverse-image match. '
+            'Much more reliable than visual look-alikes.',
+            style: TextStyle(color: t.secondaryText, fontSize: t.fontSize(11)),
+          ),
+          const SizedBox(height: 8),
+          ...report.sourceHits.map((h) => _HitTile(hit: h)),
+          const SizedBox(height: 16),
+        ],
+        if (report.visualHits.isNotEmpty) ...[
+          Text('V4.5 LOOK-ALIKES', style: _sectionStyle(t)),
+          const SizedBox(height: 4),
+          Text(
+            'Nearest nax.moe V4.5 preview fingerprints. Similar rendering, '
+            'not proof of authorship.',
+            style: TextStyle(color: t.secondaryText, fontSize: t.fontSize(11)),
+          ),
+          const SizedBox(height: 8),
+          ...report.visualHits.take(8).map((h) => _HitTile(hit: h)),
+          const SizedBox(height: 16),
+        ],
+        if (report.notes.isNotEmpty)
+          ...report.notes.map(
+            (note) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text(
+                note,
+                style: TextStyle(color: t.secondaryText, fontSize: t.fontSize(11)),
+              ),
+            ),
+          ),
+        if (report.isEmpty)
+          Text(
+            'No artist signal. Try a NovelAI PNG, a Danbooru image, or a '
+            'clearer single-subject crop.',
+            style: TextStyle(color: t.secondaryText),
+          ),
+      ],
+    );
+  }
+
+  TextStyle _sectionStyle(dynamic t) => TextStyle(
+        color: t.accent,
+        letterSpacing: 1.4,
+        fontWeight: FontWeight.bold,
+        fontSize: t.fontSize(11),
+      );
+}
+
+class _HitTile extends StatelessWidget {
+  const _HitTile({required this.hit});
+
+  final StyleMatchHit hit;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.t;
+    final label = ArtistMixEngine.promptName(hit.name);
+    final source = switch (hit.source) {
+      StyleMatchSource.metadata => 'metadata',
+      StyleMatchSource.iqdb => 'iqdb ${(hit.score * 100).round()}%',
+      StyleMatchSource.visual => 'visual ${(hit.score * 100).round()}%',
+    };
+    final strength = hit.strength == ArtistStrength.unknown
+        ? ''
+        : ' · ${hit.strength.shortLabel}';
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: SizedBox(
+        width: 48,
+        height: 64,
+        child: Image.network(
+          ArtistPreviewUrls.primary(NaxStrengthCatalog.normalizeTag(hit.name)),
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Icon(Icons.brush, color: t.secondaryText),
+        ),
+      ),
+      title: Text(label),
+      subtitle: Text(
+        '$source$strength${hit.detail != null ? ' · ${hit.detail}' : ''}',
+        style: TextStyle(color: t.secondaryText, fontSize: t.fontSize(11)),
+      ),
+      trailing: IconButton(
+        icon: const Icon(Icons.add),
+        tooltip: 'Add as primary',
+        onPressed: () {
+          final rendered = WeightEngine.renderEntry(
+            TagChip(
+              tag: hit.name,
+              kind: TagKind.artist,
+              numericWeight: hit.strength.primaryEmphasis,
+            ),
+          );
+          if (rendered == null) return;
+          NvPromptBridge.appendInPlace(
+            context,
+            rendered,
+            snackbar: 'Added $rendered',
+          );
+        },
+      ),
+    );
+  }
+}

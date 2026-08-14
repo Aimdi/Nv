@@ -199,6 +199,9 @@ List<_Feature> _getFeatures(AppLocalizations l) => [
   _Feature('Artist Browser', 'Aimdi artist picker with HuggingFace previews — add artist: tags to generate', (ctx) {
     Navigator.push(ctx, MaterialPageRoute(builder: (_) => const ToolsHubScreen(initialToolId: 'artist_browser')));
   }),
+  _Feature('Style from image', 'Guess a V4.5 artist mix from a picture (metadata / IQDB / preview fingerprints)', (ctx) {
+    Navigator.push(ctx, MaterialPageRoute(builder: (_) => const ToolsHubScreen(initialToolId: 'style_from_image')));
+  }),
   _Feature(l.helpFeatureGallery, l.helpFeatureGalleryDesc, (ctx) {
     Navigator.push(ctx, MaterialPageRoute(builder: (_) => const GalleryScreen()));
   }),

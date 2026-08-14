@@ -24,6 +24,7 @@ import '../text_gen/widgets/text_gen_panel.dart';
 import '../characters/widgets/characters_page.dart';
 import '../composer/chip_composer_panel.dart';
 import '../artists/artist_browser_panel.dart';
+import '../style_from_image/style_from_image_panel.dart';
 
 class ToolsHubScreen extends StatefulWidget {
   final String? initialToolId;
@@ -71,6 +72,7 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
     return [
       ToolItem(id: 'chip_composer', name: 'NV CHIPS', icon: Icons.view_week),
       ToolItem(id: 'artist_browser', name: 'NV ARTISTS', icon: Icons.brush),
+      ToolItem(id: 'style_from_image', name: 'NV STYLE MATCH', icon: Icons.image_search),
       ToolItem(id: 'wildcards', name: l.toolsWildcards.toUpperCase(), icon: Icons.style),
       ToolItem(id: 'tag_library', name: l.toolsTagLibrary.toUpperCase(), icon: Icons.local_offer),
       ToolItem(id: 'presets', name: l.toolsPresets.toUpperCase(), icon: Icons.tune),
@@ -296,6 +298,8 @@ class _ToolsHubScreenState extends State<ToolsHubScreen> {
         return const ChipComposerPanel();
       case 'artist_browser':
         return const ArtistBrowserPanel();
+      case 'style_from_image':
+        return const StyleFromImagePanel();
       case 'wildcards':
         return const WildcardManager();
       case 'tag_library':

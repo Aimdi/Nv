@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.0.7
+
+### New
+- **Style from image.** Tools → **NV STYLE MATCH** (also app-bar **STYLE**). Pick a file, the current generation, or the latest gallery image. Pipeline: NovelAI PNG artist tags → Danbooru IQDB reverse search → visual nearest-neighbor against 419 nax.moe V4.5 preview fingerprints. Emits a `1.1::` / `0.8::` mix. Source hits and look-alikes are labeled separately — this is hard, and the UI says so.
+
 ## v1.0.6
 
 ### Improved
