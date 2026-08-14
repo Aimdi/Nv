@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.1.0
+
+### New
+- **Knowledge API + Grok advisor.** Settings can store an xAI key and start a loopback API (`http://127.0.0.1:8765`) that exposes the same V4.5 knowledge Nv uses: rules, nax style-pull search, glue, seed triples, and `POST /v1/style/match`. `POST /v1/style/advise` asks Grok, then **grounds every name** against nax / triples / the local plan (invented Danbooru-famous tags are dropped). Style from image can **Copy knowledge brief** (paste into Grok with no key) or **Ask Grok** in-app.
+
 ## v1.0.9
 
 ### Improved

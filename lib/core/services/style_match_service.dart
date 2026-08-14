@@ -124,9 +124,12 @@ class StyleMatchService {
 
   final Dio _dio;
 
-  static const _userAgent = 'Nv/1.0.9 (https://github.com/Aimdi/Nv; style-from-image)';
+  static const _userAgent = 'Nv/1.1.0 (https://github.com/Aimdi/Nv; style-from-image)';
 
-  Future<StyleMatchReport> match(Uint8List bytes) async {
+  Future<StyleMatchReport> match(
+    Uint8List bytes, {
+    bool reverseSearch = true,
+  }) async {
     await Future.wait([
       StyleFingerprintIndex.load(),
       NaxStrengthCatalog.load(),
@@ -142,17 +145,19 @@ class StyleMatchService {
       notes.add('Found artist tags in the image metadata (NovelAI PNG).');
     }
 
-    try {
-      final iqdb = await queryIqdb(bytes);
-      for (final hit in iqdb) {
-        if (sourceHits.any((h) => _sameArtist(h.name, hit.name))) continue;
-        sourceHits.add(hit);
+    if (reverseSearch) {
+      try {
+        final iqdb = await queryIqdb(bytes);
+        for (final hit in iqdb) {
+          if (sourceHits.any((h) => _sameArtist(h.name, hit.name))) continue;
+          sourceHits.add(hit);
+        }
+        if (iqdb.isNotEmpty) {
+          notes.add('Danbooru reverse search found a similar posted image.');
+        }
+      } catch (_) {
+        notes.add('Danbooru reverse search was unavailable.');
       }
-      if (iqdb.isNotEmpty) {
-        notes.add('Danbooru reverse search found a similar posted image.');
-      }
-    } catch (_) {
-      notes.add('Danbooru reverse search was unavailable.');
     }
 
     StyleMixPlan? plan;

@@ -68,6 +68,9 @@ class PreferencesService {
   static const String _keyWindowW = 'window_w';
   static const String _keyWindowH = 'window_h';
   static const String _keyWindowMax = 'window_maximized';
+  static const String _keyKnowledgeApiEnabled = 'knowledge_api_enabled';
+  static const String _keyKnowledgeApiPort = 'knowledge_api_port';
+  static const String _keyKnowledgeApiToken = 'knowledge_api_token';
 
   final SharedPreferences _prefs;
 
@@ -93,6 +96,28 @@ class PreferencesService {
   Future<String> getApiKey() => security.getApiKey();
 
   Future<void> setApiKey(String value) => security.setApiKey(value);
+
+  Future<String> getXaiApiKey() => security.getXaiApiKey();
+
+  Future<void> setXaiApiKey(String value) => security.setXaiApiKey(value);
+
+  bool get knowledgeApiEnabled => _prefs.getBool(_keyKnowledgeApiEnabled) ?? false;
+
+  Future<void> setKnowledgeApiEnabled(bool value) async {
+    await _prefs.setBool(_keyKnowledgeApiEnabled, value);
+  }
+
+  int get knowledgeApiPort => _prefs.getInt(_keyKnowledgeApiPort) ?? 8765;
+
+  Future<void> setKnowledgeApiPort(int value) async {
+    await _prefs.setInt(_keyKnowledgeApiPort, value.clamp(1024, 65535));
+  }
+
+  String get knowledgeApiToken => _prefs.getString(_keyKnowledgeApiToken) ?? '';
+
+  Future<void> setKnowledgeApiToken(String value) async {
+    await _prefs.setString(_keyKnowledgeApiToken, value);
+  }
 
   bool get autoSaveImages => _prefs.getBool(_keyAutoSave) ?? true;
 
