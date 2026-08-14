@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.9
+
+### Improved
+- **Style match ranking was still collapsed.** Sat/val histograms of the nax hoodie scene made almost every catalog artist cosine ≈ 0.99, so “planning” was still nearest-neighbor theater. Ranking is now z-distance on ink (edge / fine / strong), saturation, and contrast — axes that actually separate the previews. Family labels use real nax ranges (the old 0.11 edge cutoff only fired on synthetic checkerboards).
+- **Known triples beat invented stacks.** If the lead sits in a community-tested seed triple for that bucket, that mix is used instead of glue-biased neighbors. Support/accent must be compatible *and* diverse (clones of the lead are skipped). Reasons show the measured Δ.
+
 ## v1.0.8
 
 ### Improved

@@ -34,7 +34,10 @@ class StyleFingerprintEntry {
     this.naxScore,
     this.naxVotes,
     this.edge,
+    this.fine,
+    this.strong,
     this.satMean,
+    this.satVar,
     this.contrast,
   });
 
@@ -43,50 +46,65 @@ class StyleFingerprintEntry {
   final int? naxScore;
   final int? naxVotes;
   final double? edge;
+  final double? fine;
+  final double? strong;
   final double? satMean;
+  final double? satVar;
   final double? contrast;
 
   ArtistStrength get strength => ArtistStrength.fromVotes(naxScore, naxVotes);
+
+  String get family => StyleFingerprint.familyOf(
+        edge: edge ?? 0,
+        strong: strong ?? 0,
+        satMean: satMean ?? 0,
+        contrast: contrast ?? 0,
+      );
 }
 
 /// How an image is *rendered*, not what is in it.
 ///
-/// Hue / mean RGB are dropped on purpose: nax V4.5 previews all show the same
-/// orange-hoodie girl, so matching those channels just finds “similar clothes.”
+/// Matching uses z-distance on ink / paint / sat scalars. A concatenated
+/// sat/val histogram of the nax hoodie scene collapses to cosine ≈ 0.99
+/// across the whole catalog, so it is not used for ranking.
 class StyleProfile {
   const StyleProfile({
     required this.vector,
     required this.satMean,
+    required this.satVar,
     required this.contrast,
     required this.edge,
+    required this.fine,
+    required this.strong,
     required this.colorfulness,
     required this.warmth,
     required this.brightness,
   });
 
-  /// L2-normalized style-only vector used for nearest-neighbor.
+  /// Scaled, L2-normalized signature (tests / cosine fallback).
   final List<double> vector;
   final double satMean;
+  final double satVar;
   final double contrast;
   final double edge;
+  final double fine;
+  final double strong;
   final double colorfulness;
   final double warmth;
   final double brightness;
 
-  String get family {
-    if (edge >= 0.11 && satMean < 0.32) return 'sketchy';
-    if (edge >= 0.10 && contrast >= 0.16) return 'cel-shaded';
-    if (edge < 0.075 && satMean >= 0.28) return 'painterly';
-    if (satMean < 0.22) return 'muted';
-    if (satMean >= 0.48) return 'vibrant';
-    return 'balanced';
-  }
+  String get family => StyleFingerprint.familyOf(
+        edge: edge,
+        strong: strong,
+        satMean: satMean,
+        contrast: contrast,
+      );
 
   /// Hint for seed_mixes buckets.
   String get bucketHint {
     if (family == 'muted' || (warmth < 0.35 && satMean < 0.30)) return 'western';
     if (family == 'cel-shaded' || family == 'sketchy') return 'anime';
-    if (family == 'vibrant' && edge >= 0.08) return 'cartoony';
+    if (family == 'vibrant' && edge >= 0.07) return 'cartoony';
     if (family == 'painterly') return 'western';
     return 'anime';
   }
@@ -97,33 +115,48 @@ class StyleProfile {
         : warmth <= 0.42
             ? 'cool'
             : 'neutral';
-    final lines = edge >= 0.11
+    final lines = (edge >= 0.085 || strong >= 0.22)
         ? 'crisp linework'
-        : edge <= 0.07
+        : edge <= 0.050
             ? 'soft edges'
             : 'moderate linework';
     return '$family, $tone grade, $lines';
   }
 
   List<String> get observations {
-    final out = <String>[
+    return [
       'Saturation ${satMean.toStringAsFixed(2)} — '
-          '${satMean >= 0.45 ? 'punchy color' : satMean <= 0.25 ? 'restrained / greyed' : 'moderate color'}',
+          '${satMean >= 0.36 ? 'punchy color' : satMean <= 0.13 ? 'restrained / greyed' : 'moderate color'}',
       'Contrast ${contrast.toStringAsFixed(2)} — '
-          '${contrast >= 0.20 ? 'hard lighting / graphic' : contrast <= 0.10 ? 'flat / even' : 'natural range'}',
-      'Line density ${edge.toStringAsFixed(2)} — '
-          '${edge >= 0.11 ? 'inked / cel' : edge <= 0.07 ? 'painted / blended' : 'mixed'}',
+          '${contrast >= 0.30 ? 'hard lighting / graphic' : contrast <= 0.16 ? 'flat / even' : 'natural range'}',
+      'Line density ${edge.toStringAsFixed(2)} (ink ${strong.toStringAsFixed(2)}) — '
+          '${(edge >= 0.085 || strong >= 0.22) ? 'inked / cel' : edge <= 0.050 ? 'painted / blended' : 'mixed'}',
     ];
-    return out;
   }
+
+  double distanceTo(StyleFingerprintEntry entry) =>
+      StyleFingerprint.renderDistance(this, entry);
+
+  double fitTo(StyleFingerprintEntry entry) =>
+      StyleFingerprint.renderFit(this, entry);
 }
 
-/// Style-only fingerprint: saturation/value shape + contrast + line density.
+/// Style-only fingerprint: ink, texture, saturation, contrast.
 class StyleFingerprint {
-  static const size = 64;
-  static const satBins = 6;
-  static const valBins = 6;
-  static const dimensions = satBins + valBins + 4;
+  static const size = 96;
+
+  /// Catalog std-ish scales so each axis can move the distance.
+  static const edgeScale = 0.015;
+  static const fineScale = 0.006;
+  static const strongScale = 0.07;
+  static const satScale = 0.09;
+  static const satVarScale = 0.04;
+  static const contrastScale = 0.07;
+
+  static const dimensions = 6;
+
+  /// Near-clone in render space (same inking / sat / contrast).
+  static const cloneDistance = 0.40;
 
   StyleFingerprint._();
 
@@ -142,16 +175,32 @@ class StyleFingerprint {
   /// Back-compat for tests that still call [compute].
   static List<double>? compute(Uint8List bytes) => analyze(bytes)?.vector;
 
+  static String familyOf({
+    required double edge,
+    required double strong,
+    required double satMean,
+    required double contrast,
+  }) {
+    // Thresholds are on real nax V4.5 preview ranges (edge p90 ≈ 0.09),
+    // not the old 0.11 cutoff that only synthetic checkerboards hit.
+    if (edge >= 0.085 || strong >= 0.22) {
+      return satMean < 0.32 ? 'sketchy' : 'cel-shaded';
+    }
+    if (edge >= 0.070 && contrast >= 0.26) return 'cel-shaded';
+    if (edge < 0.050 && satMean >= 0.18) return 'painterly';
+    if (satMean < 0.13) return 'muted';
+    if (satMean >= 0.36) return 'vibrant';
+    return 'balanced';
+  }
+
   static StyleProfile fromImage(img.Image image) {
-    final satHist = List<double>.filled(satBins, 0);
-    final valHist = List<double>.filled(valBins, 0);
-    var sumS = 0.0, sumV = 0.0, sumV2 = 0.0, sumWarm = 0.0, sumChroma = 0.0;
-    var edge = 0.0;
+    var sumS = 0.0, sumS2 = 0.0, sumV = 0.0, sumV2 = 0.0, sumWarm = 0.0, sumChroma = 0.0;
     var count = 0;
 
     final w = image.width;
     final h = image.height;
     final gray = List<double>.filled(w * h, 0);
+    final sat = List<double>.filled(w * h, 0);
 
     for (var y = 0; y < h; y++) {
       for (var x = 0; x < w; x++) {
@@ -160,13 +209,12 @@ class StyleFingerprint {
         final g = p.g / 255.0;
         final b = p.b / 255.0;
         final hsv = rgbToHsv(r, g, b);
-        satHist[_bin(hsv[1], satBins)] += 1;
-        valHist[_bin(hsv[2], valBins)] += 1;
+        sat[y * w + x] = hsv[1];
         sumS += hsv[1];
+        sumS2 += hsv[1] * hsv[1];
         sumV += hsv[2];
         sumV2 += hsv[2] * hsv[2];
         sumChroma += hsv[1] * hsv[2];
-        // Warmth: red-yellow vs blue-cyan, ignoring near-greys.
         if (hsv[1] > 0.12) {
           final hue = hsv[0];
           final warm = hue < 70 || hue > 320 ? 1.0 : (hue > 160 && hue < 260 ? 0.0 : 0.5);
@@ -178,40 +226,148 @@ class StyleFingerprint {
     }
 
     final n = math.max(1, count).toDouble();
+    var edge = 0.0;
+    var strong = 0.0;
+    final edgeCount = math.max(1, (w - 1) * (h - 1));
     for (var y = 0; y < h - 1; y++) {
       for (var x = 0; x < w - 1; x++) {
         final i = y * w + x;
         final dx = gray[i + 1] - gray[i];
         final dy = gray[i + w] - gray[i];
-        edge += math.sqrt(dx * dx + dy * dy);
+        final mag = math.sqrt(dx * dx + dy * dy);
+        edge += mag;
+        if (mag > 0.12) strong += 1;
       }
     }
-    final edgeCount = math.max(1, (w - 1) * (h - 1));
+
+    var fine = 0.0;
+    final fineCount = math.max(1, (w - 2) * (h - 2));
+    for (var y = 1; y < h - 1; y++) {
+      for (var x = 1; x < w - 1; x++) {
+        final i = y * w + x;
+        final blur = (gray[i - 1] + gray[i + 1] + gray[i - w] + gray[i + w] + gray[i] * 4) / 8;
+        fine += (gray[i] - blur).abs();
+      }
+    }
+
     final satMean = sumS / n;
+    final satVar = math.max(0.0, sumS2 / n - satMean * satMean);
     final brightness = sumV / n;
     final contrast = math.sqrt(math.max(0.0, sumV2 / n - brightness * brightness));
     final colorfulness = sumChroma / n;
     final warmth = (sumS < 1e-6) ? 0.5 : (sumWarm / sumS).clamp(0.0, 1.0);
     final edgeMean = edge / edgeCount;
-
-    final raw = <double>[
-      ...satHist.map((v) => v / n),
-      ...valHist.map((v) => v / n),
-      satMean,
-      contrast,
-      edgeMean,
-      colorfulness,
-    ];
+    final strongRatio = strong / edgeCount;
+    final fineMean = fine / fineCount;
 
     return StyleProfile(
-      vector: l2Normalize(raw),
+      vector: scaledVector(
+        edge: edgeMean,
+        fine: fineMean,
+        strong: strongRatio,
+        satMean: satMean,
+        satVar: satVar,
+        contrast: contrast,
+      ),
       satMean: satMean,
+      satVar: satVar,
       contrast: contrast,
       edge: edgeMean,
+      fine: fineMean,
+      strong: strongRatio,
       colorfulness: colorfulness,
       warmth: warmth,
       brightness: brightness,
     );
+  }
+
+  static List<double> scaledVector({
+    required double edge,
+    required double fine,
+    required double strong,
+    required double satMean,
+    required double satVar,
+    required double contrast,
+  }) {
+    return l2Normalize([
+      edge / edgeScale,
+      fine / fineScale,
+      strong / strongScale,
+      satMean / satScale,
+      satVar / satVarScale,
+      contrast / contrastScale,
+    ]);
+  }
+
+  static double renderDistance(StyleProfile query, StyleFingerprintEntry entry) {
+    return _axisDistance(
+      qEdge: query.edge,
+      qFine: query.fine,
+      qStrong: query.strong,
+      qSat: query.satMean,
+      qSatVar: query.satVar,
+      qContrast: query.contrast,
+      eEdge: entry.edge,
+      eFine: entry.fine,
+      eStrong: entry.strong,
+      eSat: entry.satMean,
+      eSatVar: entry.satVar,
+      eContrast: entry.contrast,
+    );
+  }
+
+  static double entryDistance(StyleFingerprintEntry a, StyleFingerprintEntry b) {
+    return _axisDistance(
+      qEdge: a.edge ?? 0,
+      qFine: a.fine ?? 0,
+      qStrong: a.strong ?? 0,
+      qSat: a.satMean ?? 0,
+      qSatVar: a.satVar ?? 0,
+      qContrast: a.contrast ?? 0,
+      eEdge: b.edge,
+      eFine: b.fine,
+      eStrong: b.strong,
+      eSat: b.satMean,
+      eSatVar: b.satVar,
+      eContrast: b.contrast,
+    );
+  }
+
+  static double _axisDistance({
+    required double qEdge,
+    required double qFine,
+    required double qStrong,
+    required double qSat,
+    required double qSatVar,
+    required double qContrast,
+    double? eEdge,
+    double? eFine,
+    double? eStrong,
+    double? eSat,
+    double? eSatVar,
+    double? eContrast,
+  }) {
+    var d2 = 0.0;
+    var axes = 0;
+    void add(double q, double? e, double scale) {
+      if (e == null) return;
+      final z = (q - e) / scale;
+      d2 += z * z;
+      axes++;
+    }
+
+    add(qEdge, eEdge, edgeScale);
+    add(qFine, eFine, fineScale);
+    add(qStrong, eStrong, strongScale);
+    add(qSat, eSat, satScale);
+    add(qSatVar, eSatVar, satVarScale);
+    add(qContrast, eContrast, contrastScale);
+    if (axes == 0) return 99;
+    return math.sqrt(d2);
+  }
+
+  static double renderFit(StyleProfile query, StyleFingerprintEntry entry) {
+    return 1.0 / (1.0 + renderDistance(query, entry));
   }
 
   static List<double> rgbToHsv(double r, double g, double b) {
@@ -231,11 +387,6 @@ class StyleFingerprint {
     if (h < 0) h += 360.0;
     final s = max <= 1e-9 ? 0.0 : delta / max;
     return [h, s, max];
-  }
-
-  static int _bin(double t, int bins) {
-    final i = (t.clamp(0.0, 0.999999) * bins).floor();
-    return i.clamp(0, bins - 1);
   }
 
   static List<double> l2Normalize(List<double> v) {

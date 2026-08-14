@@ -104,10 +104,10 @@ class _StyleFromImagePanelState extends State<StyleFromImagePanel> {
         ),
         const SizedBox(height: 8),
         Text(
-          'It reads the image first (line vs paint, saturation, contrast), then '
-          'plans a lead / mixer / accent. Source IDs (NovelAI PNG or Danbooru) '
-          'win over guesses. Visual picks ignore subject color so they do not '
-          'just match the orange hoodie in the nax previews.',
+          'It reads ink vs paint, saturation, and contrast (not subject color), '
+          'then plans a lead / mixer / accent. If the lead sits in a '
+          'community-tested triple, that mix wins over invented neighbors. '
+          'Source IDs (NovelAI PNG or Danbooru) still beat guesses.'
           style: TextStyle(color: t.secondaryText, fontSize: t.fontSize(12)),
         ),
         const SizedBox(height: 16),
