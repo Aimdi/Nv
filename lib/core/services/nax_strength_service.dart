@@ -77,6 +77,24 @@ class NaxStrengthCatalog {
 
   NaxStrengthEntry? lookup(String tag) => _byTag[normalizeTag(tag)];
 
+  /// Substring search, strongest V4.5 pull first.
+  List<MapEntry<String, NaxStrengthEntry>> search(String query, {int limit = 20}) {
+    final needle = normalizeTag(query);
+    final rows = _byTag.entries.where((e) {
+      if (needle.isEmpty) return true;
+      return e.key.contains(needle);
+    }).toList();
+    rows.sort((a, b) {
+      final ar = a.value.rankScore;
+      final br = b.value.rankScore;
+      final af = ar.isFinite ? ar : -1e9;
+      final bf = br.isFinite ? br : -1e9;
+      return bf.compareTo(af);
+    });
+    if (limit <= 0) return rows;
+    return rows.take(limit).toList();
+  }
+
   static String normalizeTag(String tag) {
     return tag
         .trim()

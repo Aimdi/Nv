@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
@@ -12,6 +13,7 @@ import '../../../core/l10n/locale_notifier.dart';
 import '../../../core/services/device_storage.dart';
 import '../../../core/services/output_migration_service.dart';
 import '../../../core/services/path_service.dart';
+import '../../../core/services/nv_knowledge_api.dart';
 import '../../../core/services/preferences_service.dart';
 import '../../../core/services/saf_export_service.dart';
 import '../../../core/services/update_service.dart';
@@ -41,10 +43,15 @@ class AppSettings extends StatefulWidget {
 
 class _AppSettingsState extends State<AppSettings> {
   late TextEditingController _apiKeyController;
+  late TextEditingController _xaiKeyController;
   late TextEditingController _filenamePatternController;
   late TextEditingController _savePathPatternController;
+  late TextEditingController _knowledgePortController;
   bool _isObscured = true;
+  bool _xaiObscured = true;
   bool _isCheckingUpdate = false;
+  bool _knowledgeApiBusy = false;
+  String? _knowledgeApiError;
 
   /// App-files dirs on removable volumes (SD cards), e.g.
   /// `/storage/1234-ABCD/Android/data/dev.naiweaver.app/files`.
@@ -55,12 +62,16 @@ class _AppSettingsState extends State<AppSettings> {
   void initState() {
     super.initState();
     _apiKeyController = TextEditingController();
+    _xaiKeyController = TextEditingController();
+    _knowledgePortController = TextEditingController();
     final prefs = context.read<PreferencesService>();
+    _knowledgePortController.text = '${prefs.knowledgeApiPort}';
     _filenamePatternController =
         TextEditingController(text: prefs.filenamePattern);
     _savePathPatternController =
         TextEditingController(text: prefs.savePathPattern);
     _loadApiKey();
+    _loadXaiKey();
     _loadRemovableVolumes();
   }
 
@@ -86,9 +97,19 @@ class _AppSettingsState extends State<AppSettings> {
     }
   }
 
+  Future<void> _loadXaiKey() async {
+    final prefs = context.read<PreferencesService>();
+    final key = await prefs.getXaiApiKey();
+    if (mounted) {
+      _xaiKeyController.text = key;
+    }
+  }
+
   @override
   void dispose() {
     _apiKeyController.dispose();
+    _xaiKeyController.dispose();
+    _knowledgePortController.dispose();
     _filenamePatternController.dispose();
     _savePathPatternController.dispose();
     super.dispose();
@@ -110,6 +131,8 @@ class _AppSettingsState extends State<AppSettings> {
           _buildHeader(l.settingsApiSettings.toUpperCase(), t),
           const SizedBox(height: 16),
           _buildApiKeyField(notifier, t),
+          const SizedBox(height: 24),
+          _buildKnowledgeApiSection(t),
           const SizedBox(height: 32),
           _buildHeader(l.settingsGeneralSettings.toUpperCase(), t),
           const SizedBox(height: 16),
@@ -338,6 +361,133 @@ class _AppSettingsState extends State<AppSettings> {
         ),
       ],
     );
+  }
+
+  Widget _buildKnowledgeApiSection(VisionTokens t) {
+    final prefs = context.read<PreferencesService>();
+    final running = NvKnowledgeApi.instance.isRunning;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'GROK / KNOWLEDGE API',
+          style: TextStyle(color: t.textTertiary, fontSize: t.fontSize(9), letterSpacing: 1),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Optional xAI key lets Style from image ask Grok, grounded in Nv’s '
+          'nax / triples / planner. The local API (127.0.0.1) exposes the same '
+          'knowledge so Grok or any tool can call it.',
+          style: TextStyle(color: t.textTertiary, fontSize: t.fontSize(9)),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _xaiKeyController,
+          obscureText: _xaiObscured,
+          style: TextStyle(color: t.headerText, fontSize: t.fontSize(12), fontFamily: 'monospace'),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: t.borderSubtle,
+            hintText: 'xAI API key (xai-…)',
+            hintStyle: TextStyle(color: t.textDisabled),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _xaiObscured ? Icons.visibility_off : Icons.visibility,
+                size: 16,
+                color: t.textDisabled,
+              ),
+              onPressed: () => setState(() => _xaiObscured = !_xaiObscured),
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: BorderSide(color: t.borderMedium),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: BorderSide(color: t.borderMedium),
+            ),
+          ),
+          onChanged: (val) => prefs.setXaiApiKey(val),
+        ),
+        if (!kIsWeb) ...[
+          const SizedBox(height: 12),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              'LOCAL KNOWLEDGE API',
+              style: TextStyle(color: t.headerText, fontSize: t.fontSize(11), fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(
+              running
+                  ? 'Listening on http://127.0.0.1:${NvKnowledgeApi.instance.port}'
+                  : 'Off. Grok can GET /v1/knowledge and POST /v1/style/match when on.',
+              style: TextStyle(color: t.textTertiary, fontSize: t.fontSize(9)),
+            ),
+            value: prefs.knowledgeApiEnabled,
+            onChanged: _knowledgeApiBusy ? null : (on) => _toggleKnowledgeApi(on),
+          ),
+          Row(
+            children: [
+              SizedBox(
+                width: 88,
+                child: TextField(
+                  controller: _knowledgePortController,
+                  keyboardType: TextInputType.number,
+                  style: TextStyle(color: t.headerText, fontSize: t.fontSize(12)),
+                  decoration: InputDecoration(
+                    labelText: 'Port',
+                    labelStyle: TextStyle(color: t.textTertiary, fontSize: t.fontSize(9)),
+                    isDense: true,
+                  ),
+                  onSubmitted: (_) => _toggleKnowledgeApi(prefs.knowledgeApiEnabled),
+                ),
+              ),
+              const SizedBox(width: 12),
+              if (running)
+                TextButton(
+                  onPressed: () {
+                    final url = 'http://127.0.0.1:${NvKnowledgeApi.instance.port}/v1/openapi.json';
+                    Clipboard.setData(ClipboardData(text: url));
+                    showAppSnackBar(context, 'Copied $url');
+                  },
+                  child: const Text('Copy OpenAPI URL'),
+                ),
+            ],
+          ),
+          if (_knowledgeApiError != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(_knowledgeApiError!, style: TextStyle(color: t.accent, fontSize: t.fontSize(10))),
+            ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _toggleKnowledgeApi(bool enable) async {
+    final prefs = context.read<PreferencesService>();
+    final port = int.tryParse(_knowledgePortController.text.trim()) ?? 8765;
+    setState(() {
+      _knowledgeApiBusy = true;
+      _knowledgeApiError = null;
+    });
+    try {
+      await prefs.setKnowledgeApiPort(port);
+      await prefs.setKnowledgeApiEnabled(enable);
+      NvKnowledgeApi.instance.xaiKeyProvider = prefs.getXaiApiKey;
+      if (enable) {
+        await NvKnowledgeApi.instance.start(
+          port: prefs.knowledgeApiPort,
+          token: prefs.knowledgeApiToken,
+        );
+      } else {
+        await NvKnowledgeApi.instance.stop();
+      }
+    } catch (error) {
+      _knowledgeApiError = error.toString();
+      await prefs.setKnowledgeApiEnabled(false);
+    }
+    if (mounted) setState(() => _knowledgeApiBusy = false);
   }
 
   Widget _buildAutoSaveToggle(GenerationNotifier notifier, bool value, VisionTokens t) {

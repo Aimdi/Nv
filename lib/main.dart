@@ -19,6 +19,7 @@ import 'core/l10n/locale_notifier.dart';
 import 'core/l10n/l10n_extensions.dart';
 import 'core/services/path_service.dart';
 import 'core/services/preferences_service.dart';
+import 'core/services/nv_knowledge_api.dart';
 import 'core/services/update_service.dart';
 import 'core/widgets/update_prompt.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -103,6 +104,19 @@ void main() {
   );
   final preferencesService = PreferencesService(prefs, secureStorage);
   await preferencesService.migrateApiKey();
+  if (!kIsWeb && preferencesService.knowledgeApiEnabled) {
+    NvKnowledgeApi.instance.xaiKeyProvider = preferencesService.getXaiApiKey;
+    unawaited(
+      NvKnowledgeApi.instance
+          .start(
+            port: preferencesService.knowledgeApiPort,
+            token: preferencesService.knowledgeApiToken,
+          )
+          .catchError((Object e) {
+        debugPrint('Knowledge API failed to start: $e');
+      }),
+    );
+  }
 
   // Restore window state on desktop
   if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {

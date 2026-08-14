@@ -1,16 +1,22 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/prompt/artist_mix_engine.dart';
 import '../../core/prompt/artist_strength.dart';
+import '../../core/prompt/style_knowledge.dart';
 import '../../core/prompt/weight_engine.dart';
 import '../../core/services/nax_strength_service.dart';
 import '../../core/services/nv_enrichment.dart';
+import '../../core/services/preferences_service.dart';
+import '../../core/services/style_advisor_service.dart';
 import '../../core/services/style_match_service.dart';
 import '../../core/theme/theme_extensions.dart';
+import '../../core/utils/app_snackbar.dart';
 import '../../core/utils/file_picker_helper.dart';
 import '../../core/utils/nv_prompt_bridge.dart';
 import '../gallery/providers/gallery_notifier.dart';
@@ -28,10 +34,13 @@ class StyleFromImagePanel extends StatefulWidget {
 
 class _StyleFromImagePanelState extends State<StyleFromImagePanel> {
   final _service = StyleMatchService();
+  final _advisor = StyleAdvisorService();
   Uint8List? _bytes;
   StyleMatchReport? _report;
+  StyleAdvice? _advice;
   Object? _error;
   bool _busy = false;
+  bool _asking = false;
 
   @override
   void initState() {
@@ -46,6 +55,7 @@ class _StyleFromImagePanelState extends State<StyleFromImagePanel> {
     setState(() {
       _bytes = bytes;
       _report = null;
+      _advice = null;
       _error = null;
     });
     await _analyze();
@@ -61,12 +71,57 @@ class _StyleFromImagePanelState extends State<StyleFromImagePanel> {
     try {
       final report = await _service.match(bytes);
       if (!mounted) return;
-      setState(() => _report = report);
+      setState(() {
+        _report = report;
+        _advice = null;
+      });
     } catch (error) {
       if (!mounted) return;
       setState(() => _error = error);
     } finally {
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _copyBrief() async {
+    final report = _report;
+    if (report == null) return;
+    final json = const JsonEncoder.withIndent('  ').convert(
+      StyleKnowledge.briefFromReport(report),
+    );
+    await Clipboard.setData(ClipboardData(text: json));
+    if (!mounted) return;
+    showAppSnackBar(context, 'Copied Nv knowledge brief — paste it into Grok');
+  }
+
+  Future<void> _askGrok() async {
+    final report = _report;
+    final bytes = _bytes;
+    if (report == null || _asking) return;
+    final prefs = context.read<PreferencesService>();
+    final key = await prefs.getXaiApiKey();
+    if (key.trim().isEmpty) {
+      if (!mounted) return;
+      showErrorSnackBar(
+        context,
+        'Set an xAI key in Settings, or copy the knowledge brief into Grok.',
+      );
+      return;
+    }
+    setState(() => _asking = true);
+    try {
+      final advice = await _advisor.advise(
+        report: report,
+        apiKey: key,
+        imageBytes: bytes,
+      );
+      if (!mounted) return;
+      setState(() => _advice = advice);
+    } catch (error) {
+      if (!mounted) return;
+      showErrorSnackBar(context, 'Grok failed: $error');
+    } finally {
+      if (mounted) setState(() => _asking = false);
     }
   }
 
@@ -170,7 +225,13 @@ class _StyleFromImagePanelState extends State<StyleFromImagePanel> {
         ],
         if (_report != null) ...[
           const SizedBox(height: 20),
-          _ReportView(report: _report!),
+          _ReportView(
+            report: _report!,
+            advice: _advice,
+            asking: _asking,
+            onAskGrok: _askGrok,
+            onCopyBrief: _copyBrief,
+          ),
         ],
       ],
     );
@@ -178,9 +239,19 @@ class _StyleFromImagePanelState extends State<StyleFromImagePanel> {
 }
 
 class _ReportView extends StatelessWidget {
-  const _ReportView({required this.report});
+  const _ReportView({
+    required this.report,
+    this.advice,
+    this.asking = false,
+    this.onAskGrok,
+    this.onCopyBrief,
+  });
 
   final StyleMatchReport report;
+  final StyleAdvice? advice;
+  final bool asking;
+  final VoidCallback? onAskGrok;
+  final VoidCallback? onCopyBrief;
 
   @override
   Widget build(BuildContext context) {
@@ -232,6 +303,74 @@ class _ReportView extends StatelessWidget {
             report.mix,
             style: TextStyle(fontSize: t.fontSize(13), fontWeight: FontWeight.w600),
           ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                onPressed: onCopyBrief,
+                icon: const Icon(Icons.copy, size: 16),
+                label: const Text('Copy knowledge brief'),
+              ),
+              FilledButton.tonalIcon(
+                onPressed: asking ? null : onAskGrok,
+                icon: asking
+                    ? const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.psychology, size: 16),
+                label: Text(asking ? 'Asking Grok…' : 'Ask Grok'),
+              ),
+            ],
+          ),
+          if (advice != null) ...[
+            const SizedBox(height: 16),
+            Text('GROK (GROUNDED IN NV)', style: _sectionStyle(t)),
+            const SizedBox(height: 6),
+            Text(
+              'Model ${advice!.model}. Names were checked against nax / triples / the local plan.',
+              style: TextStyle(color: t.secondaryText, fontSize: t.fontSize(11)),
+            ),
+            const SizedBox(height: 6),
+            ...advice!.picks.map(
+              (pick) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Text(
+                  '${pick.role.name} ${ArtistMixEngine.promptName(pick.name)} — ${pick.reason}',
+                  style: TextStyle(fontSize: t.fontSize(12)),
+                ),
+              ),
+            ),
+            if (advice!.mix.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              SelectableText(
+                advice!.mix,
+                style: TextStyle(fontSize: t.fontSize(13), fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              FilledButton.icon(
+                onPressed: () => NvPromptBridge.applyToMainPrompt(
+                  context,
+                  advice!.mix,
+                  snackbar: 'Applied Grok artist mix',
+                ),
+                icon: const Icon(Icons.auto_awesome),
+                label: const Text('Apply Grok mix'),
+              ),
+            ],
+            ...advice!.notes.map(
+              (note) => Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  note,
+                  style: TextStyle(color: t.secondaryText, fontSize: t.fontSize(11)),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 8),
           FilledButton.icon(
             onPressed: () => NvPromptBridge.applyToMainPrompt(

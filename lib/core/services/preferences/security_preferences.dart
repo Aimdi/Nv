@@ -13,6 +13,8 @@ class SecurityPreferences {
   static const String _kApiKey = 'nai_api_key';
   static const String _kSecureApiKey = 'nai_api_key_secure';
   static const String _kApiKeyBackup = 'nai_api_key_backup';
+  static const String _kSecureXaiKey = 'xai_api_key_secure';
+  static const String _kXaiKeyBackup = 'xai_api_key_backup';
   static const String _kPinEnabled = 'pin_lock_enabled';
   static const String _kPinHash = 'pin_lock_hash';
   static const String _kPinSalt = 'pin_lock_salt';
@@ -61,6 +63,42 @@ class SecurityPreferences {
   Future<void> setApiKey(String value) async {
     await _secure.write(key: _kSecureApiKey, value: value);
     _setBackup(value);
+  }
+
+  Future<String> getXaiApiKey() async {
+    try {
+      final key = await _secure.read(key: _kSecureXaiKey);
+      if (key != null && key.isNotEmpty) {
+        _setXaiBackup(key);
+        return key;
+      }
+    } catch (e) {
+      debugPrint('Secure storage xAI read failed: $e');
+    }
+    return _getXaiBackup();
+  }
+
+  Future<void> setXaiApiKey(String value) async {
+    await _secure.write(key: _kSecureXaiKey, value: value);
+    _setXaiBackup(value);
+  }
+
+  void _setXaiBackup(String value) {
+    if (value.isEmpty) {
+      _prefs.remove(_kXaiKeyBackup);
+      return;
+    }
+    _prefs.setString(_kXaiKeyBackup, base64Encode(utf8.encode(value)));
+  }
+
+  String _getXaiBackup() {
+    final encoded = _prefs.getString(_kXaiKeyBackup) ?? '';
+    if (encoded.isEmpty) return '';
+    try {
+      return utf8.decode(base64Decode(encoded));
+    } catch (_) {
+      return '';
+    }
   }
 
   // Simple obfuscation for the SharedPreferences backup (not cryptographic
